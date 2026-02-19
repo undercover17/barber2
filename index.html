@@ -1,0 +1,2200 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Barber Management System - Multi Branch</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --secondary: #0ea5e9;
+            --accent: #f59e0b;
+            --danger: #ef4444;
+            --success: #10b981;
+            --bg-dark: #0f172a;
+            --bg-card: rgba(30, 41, 59, 0.7);
+            --text-main: #f8fafc;
+            --text-dim: #94a3b8;
+            --glass: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --radius: 16px;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Outfit', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            background-image:
+                radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(14, 165, 233, 0.1) 0px, transparent 50%);
+            color: var(--text-main);
+            min-height: 100vh;
+            overflow-x: hidden;
+            display: flex;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--glass-border);
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-dim);
+        }
+
+        /* --- PRELOADER --- */
+        #preloader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg-dark);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease;
+        }
+
+        .loader-ring {
+            width: 80px;
+            height: 80px;
+            border: 4px solid var(--glass-border);
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* --- LAYOUT --- */
+        #sidebar {
+            width: 280px;
+            height: 100vh;
+            background: var(--bg-card);
+            backdrop-filter: blur(20px);
+            border-right: 1px solid var(--glass-border);
+            padding: 2rem 1.5rem;
+            display: flex;
+            flex-direction: column;
+            position: sticky;
+            top: 0;
+            transition: var(--transition);
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 3rem;
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            color: white;
+            box-shadow: 0 8px 16px rgba(99, 102, 241, 0.3);
+        }
+
+        .logo-name {
+            font-weight: 700;
+            font-size: 1.25rem;
+            letter-spacing: -0.5px;
+        }
+
+        .nav-section {
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: var(--text-dim);
+            margin: 1.5rem 0 0.5rem 1rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            opacity: 0.5;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            border-radius: 12px;
+            color: var(--text-dim);
+            text-decoration: none;
+            margin-bottom: 8px;
+            transition: var(--transition);
+            cursor: pointer;
+        }
+
+        .nav-link:hover {
+            background: var(--glass);
+            color: var(--text-main);
+        }
+
+        .nav-link.active {
+            background: linear-gradient(90deg, var(--primary), transparent);
+            color: white;
+            border-left: 4px solid var(--primary);
+        }
+
+        .nav-link i {
+            width: 20px;
+            text-align: center;
+        }
+
+        #main-content {
+            flex: 1;
+            padding: 2rem;
+            max-width: 100%;
+            margin: 0;
+            width: 100%;
+        }
+
+        /* --- COMPONENTS --- */
+        .glass-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            transition: var(--transition);
+        }
+
+        .glass-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--primary);
+        }
+
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .stat-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            flex-shrink: 0;
+        }
+
+        .stat-info h3 {
+            font-size: 0.875rem;
+            color: var(--text-dim);
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+
+        .stat-info p {
+            font-size: 1.25rem;
+            font-weight: 700;
+            display: flex;
+            align-items: baseline;
+            gap: 4px;
+            white-space: nowrap;
+        }
+
+        .stat-info p .rp-label {
+            font-size: 0.85rem;
+            opacity: 0.7;
+            font-weight: 500;
+        }
+
+        /* --- BUTTONS --- */
+        .btn {
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            justify-content: center;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        }
+
+        .btn-primary:hover {
+            opacity: 0.9;
+            transform: scale(1.02);
+        }
+
+        .btn-glass {
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            color: var(--text-main);
+        }
+
+        .btn-glass:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .btn-glass.active {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: white;
+            box-shadow: 0 0 15px rgba(99, 102, 241, 0.4);
+        }
+
+        /* --- FORMS --- */
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 0.875rem;
+            color: var(--text-dim);
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px 16px;
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            color: white;
+            outline: none;
+            transition: var(--transition);
+        }
+
+        .form-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+        }
+
+        /* --- LOGIN PAGE --- */
+        #login-page {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg-dark);
+            z-index: 10000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .login-card {
+            width: 100%;
+            max-width: 420px;
+            padding: 3rem;
+            animation: fadeIn 0.8s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* --- VIEWS --- */
+        .view {
+            display: none;
+        }
+
+        .view.active {
+            display: block;
+            animation: slideIn 0.4s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        /* --- TABLES --- */
+        .table-container {
+            overflow-x: auto;
+            margin-top: 1rem;
+            border-radius: 12px;
+            border: 1px solid var(--glass-border);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--glass);
+        }
+
+        th {
+            padding: 16px;
+            text-align: left;
+            background: rgba(255, 255, 255, 0.03);
+            color: var(--text-dim);
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        td {
+            padding: 16px;
+            border-top: 1px solid var(--glass-border);
+            font-size: 0.9rem;
+        }
+
+        tr:hover td {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        /* --- POS VIEW specifica --- */
+        .service-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .service-item {
+            padding: 1.5rem;
+            text-align: center;
+            cursor: pointer;
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            transition: var(--transition);
+        }
+
+        .service-item:hover {
+            border-color: var(--primary);
+            background: var(--glass);
+        }
+
+        .service-item.selected {
+            background: var(--primary);
+            color: white;
+        }
+
+        .sub-nav {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+            padding: 4px;
+            background: rgba(15, 23, 42, 0.3);
+            border-radius: 12px;
+            width: fit-content;
+        }
+
+        .sub-nav-item {
+            padding: 10px 20px;
+            cursor: pointer;
+            color: var(--text-dim);
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: var(--transition);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .sub-nav-item:hover {
+            color: var(--text-main);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .sub-nav-item.active {
+            color: white;
+            background: var(--primary);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+        }
+
+        .service-price {
+            display: block;
+            font-weight: 700;
+            margin-top: 8px;
+            color: var(--secondary);
+        }
+
+        .service-item.selected .service-price {
+            color: white;
+        }
+
+        /* --- MOBILE RESPONSIVE --- */
+        @media (max-width: 992px) {
+            #sidebar {
+                width: 80px;
+            }
+
+            .nav-text,
+            .logo-name {
+                display: none;
+            }
+
+            .nav-link {
+                justify-content: center;
+                padding: 12px;
+            }
+
+            .logo-container {
+                justify-content: center;
+            }
+        }
+
+        @media (max-width: 768px) {
+            body {
+                flex-direction: column;
+            }
+
+            #sidebar {
+                width: 100%;
+                height: 70px;
+                position: fixed;
+                bottom: 0;
+                top: auto;
+                left: 0;
+                flex-direction: row;
+                justify-content: space-around;
+                align-items: center;
+                padding: 0 10px;
+                z-index: 1000;
+                border-right: none;
+                border-top: 1px solid var(--glass-border);
+                border-radius: 20px 20px 0 0;
+            }
+
+            #sidebar .logo-container,
+            #sidebar .nav-section {
+                display: none;
+            }
+
+            .nav-link {
+                flex-direction: column;
+                gap: 4px;
+                padding: 8px;
+                margin-bottom: 0;
+                font-size: 0.7rem;
+                flex: 1;
+            }
+
+            .nav-link i {
+                font-size: 1.25rem;
+            }
+
+            .nav-link .nav-text {
+                display: block;
+            }
+
+            #main-content {
+                padding: 1rem;
+                padding-bottom: 90px;
+            }
+
+            .stat-grid {
+                grid-template-columns: 1fr;
+            }
+
+            /* Stack POS & Charts */
+            #pos-view .glass-card>div,
+            section#dashboard-view>div {
+                grid-template-columns: 1fr !important;
+                gap: 1.5rem !important;
+            }
+
+            .flex-between {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+
+            .flex-between button {
+                width: 100%;
+            }
+
+            /* Responsive Tables */
+            .table-container {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            table {
+                min-width: 600px;
+                /* Force scroll on very small screens */
+            }
+
+            h2 {
+                font-size: 1.5rem;
+            }
+        }
+
+        /* Utils */
+        .badge {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .badge-success {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+        }
+
+        .flex-between {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .text-gradient {
+            background: linear-gradient(135deg, #fff, var(--text-dim));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(5px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+
+        .modal-content {
+            border: 1px solid var(--glass-border);
+            animation: modalFade 0.3s ease;
+        }
+
+        @keyframes modalFade {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- PRELOADER -->
+    <div id="preloader">
+        <div class="loader-ring"></div>
+        <p id="preloader-text" style="margin-top: 20px; font-weight: 500; color: var(--text-dim)">MENGINISIALISASI
+            SISTEM...</p>
+    </div>
+
+    <!-- LOGIN PAGE -->
+    <div id="login-page">
+        <div class="glass-card login-card">
+            <div class="logo-container" style="justify-content: center; margin-bottom: 2rem;">
+                <div class="logo-icon"><i class="fas fa-scissors"></i></div>
+                <div class="logo-name">BARBER SYSTEM</div>
+            </div>
+            <h2 style="text-align: center; margin-bottom: 2rem;">Selamat Datang</h2>
+            <form id="login-form">
+                <div class="form-group">
+                    <label class="form-label">Nomor WhatsApp</label>
+                    <input type="text" class="form-input" id="login-wa" placeholder="628..." required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Password</label>
+                    <input type="password" class="form-input" id="login-pass" placeholder="••••••••" required>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">
+                    Login Sekarang <i class="fas fa-arrow-right"></i>
+                </button>
+            </form>
+            <p id="login-msg"
+                style="text-align: center; margin-top: 1.5rem; color: var(--danger); font-size: 0.875rem;"></p>
+        </div>
+    </div>
+
+    <!-- SIDEBAR -->
+    <nav id="sidebar">
+        <div class="logo-container">
+            <div class="logo-icon"><i class="fas fa-scissors"></i></div>
+            <div class="logo-name">BARBER<span style="color: var(--primary)">.PRO</span></div>
+        </div>
+
+        <div class="nav-links">
+            <div class="nav-link active" data-view="dashboard">
+                <i class="fas fa-th-large"></i> <span class="nav-text">Dashboard</span>
+            </div>
+            <div class="nav-link" data-view="pos">
+                <i class="fas fa-cash-register"></i> <span class="nav-text">Kasir (POS)</span>
+            </div>
+            <div class="nav-link" data-view="attendance">
+                <i class="fas fa-calendar-check"></i> <span class="nav-text">Absensi</span>
+            </div>
+            <div class="nav-link" data-view="my-customers" id="nav-my-customers">
+                <i class="fas fa-users-cog"></i> <span class="nav-text">Pelanggan Saya</span>
+            </div>
+
+            <div class="nav-section" id="nav-section-op">Manajemen OP</div>
+
+            <div class="nav-link" data-view="management" id="nav-management">
+                <i class="fas fa-user-tie"></i> <span class="nav-text">Karyawan</span>
+            </div>
+            <div class="nav-link" data-view="branches" id="nav-branches">
+                <i class="fas fa-store"></i> <span class="nav-text">Manajemen Cabang</span>
+            </div>
+            <div class="nav-link" data-view="customers-db" id="nav-customers">
+                <i class="fas fa-address-book"></i> <span class="nav-text">Database Pelanggan</span>
+            </div>
+            <div class="nav-link" data-view="reports" id="nav-reports">
+                <i class="fas fa-chart-line"></i> <span class="nav-text">Laporan Gaji</span>
+            </div>
+            <div class="nav-link" data-view="expenses" id="nav-expenses">
+                <i class="fas fa-file-invoice-dollar"></i> <span class="nav-text">Biaya & Pengeluaran</span>
+            </div>
+            <div class="nav-link" data-view="payment-settings" id="nav-payment-settings">
+                <i class="fas fa-credit-card"></i> <span class="nav-text">Metode Pembayaran</span>
+            </div>
+        </div>
+
+        <div style="margin-top: auto;">
+            <div class="nav-link" onclick="logout()" style="color: var(--danger);">
+                <i class="fas fa-sign-out-alt"></i> <span class="nav-text">Keluar</span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- MAIN CONTENT -->
+    <main id="main-content">
+
+        <!-- DASHBOARD VIEW -->
+        <section id="dashboard-view" class="view active">
+            <div class="flex-between" style="margin-bottom: 2rem;">
+                <div>
+                    <h1 class="text-gradient">Halo, <span id="user-name">Owner</span>!</h1>
+                    <p style="color: var(--text-dim)">Ringkasan performa hari ini.</p>
+                </div>
+                <div class="badge badge-success">
+                    <i class="fas fa-circle" style="font-size: 8px; margin-right: 5px;"></i> Online
+                </div>
+            </div>
+
+            <!-- Stats Overview -->
+            <div class="stat-grid">
+                <div class="glass-card stat-card">
+                    <div class="stat-icon" style="background: rgba(99, 102, 241, 0.1); color: var(--primary);">
+                        <i class="fas fa-wallet"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>Total Omset</h3>
+                        <p id="stat-revenue">Rp 0</p>
+                    </div>
+                </div>
+                <div class="glass-card stat-card">
+                    <div class="stat-icon" style="background: rgba(34, 197, 94, 0.1); color: #22c55e;">
+                        <i class="fas fa-money-bill-wave"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>Omset Cash</h3>
+                        <p id="stat-cash" style="color: #22c55e">Rp 0</p>
+                    </div>
+                </div>
+                <div class="glass-card stat-card">
+                    <div class="stat-icon" style="background: rgba(59, 130, 246, 0.1); color: #3b82f6;">
+                        <i class="fas fa-qrcode"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>Omset QRIS</h3>
+                        <p id="stat-qris" style="color: #3b82f6">Rp 0</p>
+                    </div>
+                </div>
+                <div class="glass-card stat-card">
+                    <div class="stat-icon" style="background: rgba(16, 185, 129, 0.1); color: var(--success);">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>Pelanggan</h3>
+                        <p id="stat-customers">0</p>
+                    </div>
+                </div>
+                <div class="glass-card stat-card">
+                    <div class="stat-icon" style="background: rgba(245, 158, 11, 0.1); color: var(--accent);">
+                        <i class="fas fa-cut"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>Total Jasa</h3>
+                        <p id="stat-services">0</p>
+                    </div>
+                </div>
+                <div class="glass-card stat-card">
+                    <div class="stat-icon" style="background: rgba(99, 102, 241, 0.1); color: var(--primary);">
+                        <i class="fas fa-handshake"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>Bagi Hasil</h3>
+                        <p id="stat-payout" style="color: var(--secondary);">Rp 0</p>
+                    </div>
+                </div>
+                <div class="glass-card stat-card">
+                    <div class="stat-icon" style="background: rgba(239, 68, 68, 0.1); color: #ef4444;">
+                        <i class="fas fa-utensils"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>Uang Makan</h3>
+                        <p id="stat-meal" style="color: #ef4444;">Rp 0</p>
+                    </div>
+                </div>
+                <div class="glass-card stat-card">
+                    <div class="stat-icon" style="background: rgba(16, 185, 129, 0.1); color: var(--success);">
+                        <i class="fas fa-hand-holding-usd"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>Setoran Bersih</h3>
+                        <p id="stat-net" style="color: var(--success);">Rp 0</p>
+                    </div>
+                </div>
+                <div class="glass-card stat-card">
+                    <div class="stat-icon" style="background: rgba(239, 68, 68, 0.1); color: var(--danger);">
+                        <i class="fas fa-arrow-down"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>Pengeluaran</h3>
+                        <p id="stat-expenses">Rp 0</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chart & Top Capsters -->
+            <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem;">
+                <div class="glass-card">
+                    <h3 style="margin-bottom: 1.5rem;">Statistik Mingguan</h3>
+                    <canvas id="revenueChart" height="200"></canvas>
+                </div>
+                <div class="glass-card">
+                    <h3 style="margin-bottom: 1.5rem;">Top Capster</h3>
+                    <div id="top-capsters-list">
+                        <!-- Dynamic content -->
+                        <p style="color: var(--text-dim); text-align: center; padding: 20px;">Belum ada data</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- POS VIEW -->
+        <section id="pos-view" class="view">
+            <div class="glass-card">
+                <h2>Kasir Baru</h2>
+                <div style="display: grid; grid-template-columns: 1fr 340px; gap: 2rem; margin-top: 2rem;">
+
+                    <!-- LEFT: Selection -->
+                    <div>
+                        <div class="form-group">
+                            <label class="form-label">Nama Pelanggan / WhatsApp</label>
+                            <div style="display: flex; gap: 10px;">
+                                <input type="text" class="form-input" id="pos-customer"
+                                    placeholder="Cari atau Tambah Baru...">
+                                <button class="btn btn-glass" onclick="showAddCustomerModal()"
+                                    title="Tambah Pelanggan Baru"><i class="fas fa-plus"></i> <span
+                                        style="margin-left: 5px;">Tambah Pelanggan</span></button>
+                            </div>
+                        </div>
+
+                        <h4 style="margin-top: 2rem;">Pilih Jasa / Produk</h4>
+                        <div id="pos-services" class="service-grid">
+                            <!-- Dynamic services -->
+                        </div>
+                    </div>
+
+                    <!-- RIGHT: Checkout -->
+                    <div class="glass-card" style="background: rgba(15, 23, 42, 0.3);">
+                        <h3 style="margin-bottom: 1.5rem;">Ringkasan</h3>
+                        <div id="pos-items-list" style="min-height: 200px;">
+                            <p style="color: var(--text-dim); text-align: center; margin-top: 50px;">Belum ada item
+                                dipilih</p>
+                        </div>
+
+                        <div style="border-top: 1px solid var(--glass-border); padding-top: 1rem; margin-top: 1rem;">
+                            <div class="flex-between" style="margin-bottom: 20px;">
+                                <span>Total Tagihan</span>
+                                <span id="pos-total-price" style="font-weight: 700; font-size: 1.25rem;">Rp 0</span>
+                            </div>
+
+                            <div class="form-group" style="margin-bottom: 1.5rem;">
+                                <label class="form-label" style="font-size: 0.8rem; opacity: 0.7;">Metode
+                                    Pembayaran</label>
+                                <div id="pos-payment-methods" style="display: flex; gap: 8px;">
+                                    <!-- Dynamic from settings -->
+                                </div>
+                                <input type="hidden" id="selected-payment-method" value="">
+                            </div>
+
+                            <div class="flex-between"
+                                style="margin-bottom: 2rem; color: var(--success); font-weight: 500;">
+                                <span>Potongan Voucher</span>
+                                <span>-Rp 0</span>
+                            </div>
+
+                            <button class="btn btn-primary" style="width: 100%;" onclick="submitTransaction()">
+                                SELESAI & SIMPAN <i class="fas fa-check-circle"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <!-- ATTENDANCE VIEW -->
+        <section id="attendance-view" class="view">
+            <div class="glass-card" style="width: 100%;">
+                <h2 style="text-align: center; margin-bottom: 2rem;">Presensi Capster</h2>
+                <div style="text-align: center; margin-bottom: 2rem;">
+                    <div style="font-size: 3rem; font-weight: 700;" id="live-clock">00:00:00</div>
+                    <p style="color: var(--text-dim)" id="live-date">Kamis, 19 Februari 2026</p>
+                </div>
+
+                <div id="attendance-form-container" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <button class="btn btn-primary" style="height: 120px; font-size: 1.25rem; flex-direction: column;"
+                        onclick="postAttendance('Hadir')">
+                        <i class="fas fa-sign-in-alt" style="font-size: 2rem; margin-bottom: 10px;"></i> Masuk
+                    </button>
+                    <button class="btn btn-glass" style="height: 120px; font-size: 1.25rem; flex-direction: column;"
+                        onclick="postAttendance('Izin')">
+                        <i class="fas fa-user-clock" style="font-size: 2rem; margin-bottom: 10px;"></i> Izin / Sakit
+                    </button>
+                </div>
+
+                <div class="table-container" style="margin-top: 3rem;">
+                    <table id="attendance-table">
+                        <thead>
+                            <tr>
+                                <th>Tanggal</th>
+                                <th>Nama</th>
+                                <th>Jam</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Dynamic content -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- KARYAWAN VIEW (With Sub-Menus) -->
+        <section id="management-view" class="view">
+            <div class="flex-between" style="margin-bottom: 2rem;">
+                <h2>Manajemen Karyawan</h2>
+                <button class="btn btn-primary" onclick="showCapsterModal()"><i class="fas fa-plus"></i> Tambah
+                    Personil</button>
+            </div>
+
+            <!-- SUB-MENU TABS -->
+            <div class="sub-nav">
+                <div class="sub-nav-item active" onclick="switchSubTab('gaji-penempatan', this)">
+                    <i class="fas fa-money-check-alt"></i> Gaji & Penempatan
+                </div>
+                <div class="sub-nav-item" onclick="switchSubTab('identitas-akses', this)">
+                    <i class="fas fa-key"></i> Identitas & Akses
+                </div>
+            </div>
+
+            <!-- Sub-View 1: Sistem Gaji & Penempatan -->
+            <div id="sub-view-gaji-penempatan" class="sub-view-content">
+                <div class="glass-card">
+                    <div class="table-container">
+                        <table id="capsters-table">
+                            <thead>
+                                <tr>
+                                    <th>Nama</th>
+                                    <th>Penempatan</th>
+                                    <th>Gaji Pokok</th>
+                                    <th>Komisi (%)</th>
+                                    <th>Uang Makan</th>
+                                    <th>Status</th>
+                                    <th>Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Dynamic content -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sub-View 2: Identitas & Akses Login -->
+            <div id="sub-view-identitas-akses" class="sub-view-content" style="display: none;">
+                <div class="glass-card">
+                    <div class="table-container">
+                        <table id="staff-identity-table">
+                            <thead>
+                                <tr>
+                                    <th>Nama Lengkap</th>
+                                    <th>WhatsApp (ID)</th>
+                                    <th>Peran</th>
+                                    <th>Password</th>
+                                    <th>Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Dynamic content -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- BRANCHES VIEW -->
+        <section id="branches-view" class="view">
+            <div class="flex-between" style="margin-bottom: 2rem;">
+                <h2>Manajemen Cabang</h2>
+                <button class="btn btn-primary" onclick="showBranchModal()"><i class="fas fa-plus"></i> Cabang
+                    Baru</button>
+            </div>
+
+            <div class="glass-card">
+                <div class="table-container">
+                    <table id="branches-table">
+                        <thead>
+                            <tr>
+                                <th>Nama Cabang</th>
+                                <th>Alamat</th>
+                                <th>Manajer</th>
+                                <th>Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Dynamic content -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- MY CUSTOMERS VIEW -->
+        <section id="my-customers-view" class="view">
+            <div class="flex-between" style="margin-bottom: 2rem;">
+                <h2>Riwayat Pelanggan & Jasa Saya</h2>
+                <p id="my-cust-stats" style="color: var(--text-dim); font-size: 0.9rem;"></p>
+            </div>
+
+            <div class="glass-card">
+                <div class="table-container">
+                    <table id="my-customers-table">
+                        <thead>
+                            <tr>
+                                <th>Tanggal</th>
+                                <th>Nama Pelanggan</th>
+                                <th>Layanan / Produk</th>
+                                <th>Metode</th>
+                                <th>Status Komisi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Dynamic content -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- EXPENSES VIEW -->
+        <section id="expenses-view" class="view">
+            <div class="flex-between" style="margin-bottom: 2rem;">
+                <h2>Biaya & Pengeluaran</h2>
+                <button class="btn btn-primary" onclick="showExpenseModal()"><i class="fas fa-plus"></i> Catat
+                    Pengeluaran</button>
+            </div>
+
+            <div class="glass-card">
+                <div class="table-container">
+                    <table id="expenses-table">
+                        <thead>
+                            <tr>
+                                <th>Tanggal</th>
+                                <th>Cabang</th>
+                                <th>Kategori</th>
+                                <th>Keterangan</th>
+                                <th>Jumlah</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Dynamic -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- PAYMENT SETTINGS VIEW -->
+        <section id="payment-settings-view" class="view">
+            <div class="flex-between" style="margin-bottom: 2rem;">
+                <h2>Pengaturan Metode Pembayaran</h2>
+            </div>
+            <div class="glass-card" style="max-width: 500px;">
+                <p style="margin-bottom: 1.5rem; color: var(--text-dim); font-size: 0.9rem;">
+                    Atur metode pembayaran yang tersedia di kasir. Pisahkan dengan tanda koma.
+                    <br><small>Contoh: Cash, QRIS, Transfer</small>
+                </p>
+                <div class="form-group">
+                    <label class="form-label">Daftar Metode</label>
+                    <input type="text" class="form-input" id="payment-methods-input" placeholder="Cash, QRIS">
+                </div>
+                <button class="btn btn-primary" onclick="savePaymentSetting()" style="width: 100%; margin-top: 1.5rem;">
+                    SIMPAN <i class="fas fa-save"></i>
+                </button>
+            </div>
+        </section>
+
+        <!-- CUSTOMERS DB VIEW -->
+        <section id="customers-db-view" class="view">
+            <div class="flex-between" style="margin-bottom: 2rem;">
+                <h2>Database Pelanggan</h2>
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" class="form-input" placeholder="Cari Pelanggan..." id="search-cust-db"
+                        oninput="renderCustomersView()">
+                </div>
+            </div>
+
+            <div class="glass-card">
+                <div class="table-container">
+                    <table id="customers-db-table">
+                        <thead>
+                            <tr>
+                                <th>Nama Pelanggan</th>
+                                <th>WhatsApp</th>
+                                <th>Total Kunjungan</th>
+                                <th>Poin</th>
+                                <th>Kunjungan Terakhir</th>
+                                <th>Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Dynamic content -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- REPORTS VIEW -->
+        <section id="reports-view" class="view">
+            <div class="flex-between" style="margin-bottom: 2rem;">
+                <h2>Laporan Keuangan & Gaji</h2>
+                <div style="display: flex; gap: 10px;">
+                    <input type="month" class="form-input" style="width: auto;">
+                    <button class="btn btn-glass"><i class="fas fa-download"></i> PDF</button>
+                </div>
+            </div>
+
+            <div class="glass-card">
+                <h3>Rincian Gaji Capster (Bulan Ini)</h3>
+                <div class="table-container">
+                    <table id="payroll-table">
+                        <thead>
+                            <tr>
+                                <th>Capster</th>
+                                <th>Gaji Pokok</th>
+                                <th>Komisi Jasa</th>
+                                <th>Uang Makan</th>
+                                <th>Total Gaji</th>
+                                <th>Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Dynamic content -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- MODAL LOG / DETAILS -->
+    <div id="log-modal" class="modal-overlay" style="display: none;">
+        <div class="glass-card modal-content" style="max-width: 700px; width: 95%;">
+            <div class="flex-between" style="margin-bottom: 2rem;">
+                <h2 id="log-modal-title">Rincian Data</h2>
+                <button class="btn" onclick="closeLogModal()" style="padding: 5px;"><i
+                        class="fas fa-times"></i></button>
+            </div>
+            <div id="log-modal-content" style="max-height: 400px; overflow-y: auto;">
+                <!-- Logs will be rendered here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL EDIT / ADD -->
+    <div id="modal-container" class="modal-overlay" style="display: none;">
+        <div class="glass-card modal-content" style="max-width: 500px; width: 90%;">
+            <div class="flex-between" style="margin-bottom: 2rem;">
+                <h2 id="modal-title">Edit Data</h2>
+                <button class="btn" onclick="closeModal()" style="padding: 5px;"><i class="fas fa-times"></i></button>
+            </div>
+            <form id="generic-form">
+                <input type="hidden" id="form-id">
+                <div id="form-fields">
+                    <!-- Dynamic fields -->
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1.5rem;">
+                    SIMPAN PERUBAHAN <i class="fas fa-save"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- UI Logic Script -->
+    <script>
+        const APP_URL = 'https://script.google.com/macros/s/AKfycbxwI_l6jrYAmIHQBqp2VoDIxA5hfmKEEyufwxrqTn4qfHq7DwwcyZO4Ja8lVGPn85I9/exec';
+
+        // State Management
+        let currentUser = null;
+        let dbData = {
+            branches: [],
+            capsters: [],
+            services: [],
+            customers: [],
+            settings: { batas_kunjungan_gratis: 5 }
+        };
+        let cart = [];
+
+        // App Initialization
+        window.onload = function () {
+            // Check for existing session
+            const savedUser = localStorage.getItem('barber_session');
+            if (savedUser) {
+                currentUser = JSON.parse(savedUser);
+                loginSuccess(currentUser, currentUser.role, true);
+            }
+
+            updateClock();
+            setInterval(updateClock, 1000);
+            initViews();
+
+            fetchDataFromGAS();
+        };
+
+        async function fetchDataFromGAS() {
+            const preloaderText = document.getElementById('preloader-text');
+            if (preloaderText) preloaderText.textContent = 'sinkronisasi data cloud...';
+            console.log('Fetching data from GAS...');
+
+            try {
+                const response = await fetch(`${APP_URL}?action=get_init_data`);
+                const res = await response.json();
+                console.log('Data received:', res);
+
+                if (res.status === 'success') {
+                    dbData = res.data;
+
+                    // Render semua komponen utama
+                    renderServices();
+                    renderCapsters();
+
+                    if (currentUser) {
+                        renderDashboard();
+                        renderCustomersList();
+                        renderPaymentMethodsInPOS();
+                    }
+
+                    // Sembunyikan preloader hanya setelah data siap
+                    const preloader = document.getElementById('preloader');
+                    if (preloader) {
+                        if (preloaderText) preloaderText.textContent = 'sistem siap!';
+                        setTimeout(() => {
+                            preloader.style.opacity = '0';
+                            setTimeout(() => preloader.style.display = 'none', 500);
+                        }, 500);
+                    }
+                } else {
+                    if (preloaderText) preloaderText.textContent = 'gagal memuat data, mencoba kembali...';
+                    setTimeout(fetchDataFromGAS, 3000); // Retry after 3 seconds
+                }
+            } catch (err) {
+                console.error('Gagal mengambil data:', err);
+                if (preloaderText) preloaderText.textContent = 'koneksi terganggu, cek internet bapak...';
+                setTimeout(fetchDataFromGAS, 5000); // Wait 5s on network error
+            }
+        }
+
+        function updateClock() {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            const dateStr = now.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            if (document.getElementById('live-clock')) document.getElementById('live-clock').textContent = timeStr;
+            if (document.getElementById('live-date')) document.getElementById('live-date').textContent = dateStr;
+        }
+
+        function initViews() {
+            const navLinks = document.querySelectorAll('.nav-link[data-view]');
+            navLinks.forEach(link => {
+                link.onclick = () => {
+                    const viewName = link.getAttribute('data-view');
+
+                    const ownerOnlyViews = ['management', 'branches', 'customers-db', 'staff-data', 'expenses', 'payment-settings'];
+                    if (ownerOnlyViews.includes(viewName) && (!currentUser || currentUser.role !== 'owner')) {
+                        return alert('Akses Dibatasi: Hanya Owner yang dapat mengakses menu ini.');
+                    }
+
+                    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+                    document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+
+                    document.getElementById(viewName + '-view').classList.add('active');
+                    link.classList.add('active');
+
+                    if (viewName === 'reports') renderPayroll();
+                    if (viewName === 'branches') renderBranches();
+                    if (viewName === 'customers-db') renderCustomersView();
+                    if (viewName === 'management') {
+                        renderCapsters();
+                        renderStaffData();
+                    }
+                    if (viewName === 'expenses') renderExpenses();
+                    if (viewName === 'my-customers') renderMyCustomers();
+                    if (viewName === 'attendance') renderAttendance();
+                    if (viewName === 'payment-settings') {
+                        document.getElementById('payment-methods-input').value = dbData.settings.metode_pembayaran || 'Cash,QRIS';
+                    }
+                };
+            });
+        }
+
+        // --- AUTH LOGIC ---
+        document.getElementById('login-form').onsubmit = async function (e) {
+            e.preventDefault();
+            const wa = document.getElementById('login-wa').value.trim();
+            const pass = document.getElementById('login-pass').value.trim();
+            const msgEl = document.getElementById('login-msg');
+
+            const btn = e.target.querySelector('button');
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menghubungkan...';
+            msgEl.textContent = '';
+
+            try {
+                const url = `${APP_URL}?action=login_get&wa=${encodeURIComponent(wa)}&pass=${encodeURIComponent(pass)}`;
+                const response = await fetch(url);
+                const res = await response.json();
+
+                if (res.status === 'success') {
+                    // Save to local storage
+                    const userData = { ...res.user, role: res.role };
+                    localStorage.setItem('barber_session', JSON.stringify(userData));
+                    loginSuccess(userData, res.role);
+                } else {
+                    msgEl.textContent = res.message || 'Login Gagal.';
+                }
+            } catch (err) {
+                console.error('Login error:', err);
+                msgEl.textContent = 'Gagal terhubung ke server.';
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        };
+
+        function loginSuccess(user, role, isAuto = false) {
+            currentUser = user;
+            currentUser.role = role;
+            document.getElementById('login-page').style.display = 'none';
+            document.getElementById('user-name').textContent = user.name;
+
+            if (role !== 'owner') {
+                const restrictedNavs = ['nav-section-op', 'nav-management', 'nav-branches', 'nav-customers', 'nav-reports', 'nav-expenses', 'nav-payment-settings'];
+                restrictedNavs.forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.style.display = 'none';
+                });
+            } else {
+                // Owner: Sembunyikan form absen, tampilkan report saja
+                const form = document.getElementById('attendance-form-container');
+                if (form) form.style.display = 'none';
+                document.querySelector('#attendance-view h2').textContent = 'Rekap Presensi Karyawan';
+            }
+
+            renderDashboard();
+            renderServices();
+        }
+
+        function logout() {
+            localStorage.removeItem('barber_session');
+            location.reload();
+        }
+
+        // --- CUSTOMER MANAGEMENT ---
+        function showAddCustomerModal() {
+            openModal('Tambah Pelanggan Baru', [
+                { label: 'Nama Lengkap', key: 'name', placeholder: 'Masukkan nama pelanggan...' },
+                { label: 'Nomor WhatsApp', key: 'whatsapp', placeholder: '62812...' }
+            ], '', 'save_customer');
+        }
+
+        // --- RENDER FUNCTIONS ---
+        const parseMoney = (val) => {
+            if (!val) return 0;
+            if (typeof val === 'number') return val;
+            return parseInt(String(val).replace(/[^\d]/g, '')) || 0;
+        };
+
+        function renderDashboard() {
+            if (!currentUser) return;
+            document.getElementById('user-name').textContent = currentUser.name;
+
+            let trans = dbData.transactions || [];
+            let exps = dbData.expenses || [];
+
+            // Filter data sesuai peran (Capster hanya melihat data miliknya/cabangnya)
+            if (currentUser.role !== 'owner') {
+                trans = trans.filter(t => String(t.capster_id) === String(currentUser.id));
+                // Pengeluaran biasanya per cabang
+                exps = exps.filter(e => String(e.cabang_id) === String(currentUser.cabang_id));
+            }
+
+            const totalRevenue = trans.reduce((sum, t) => sum + parseMoney(t.total), 0);
+            const totalCash = trans.filter(t => (t.metode_bayar || t.payment_method) === 'Cash').reduce((sum, t) => sum + parseMoney(t.total), 0);
+            const totalQRIS = trans.filter(t => (t.metode_bayar || t.payment_method) === 'QRIS').reduce((sum, t) => sum + parseMoney(t.total), 0);
+
+            const totalPayout = trans.reduce((sum, t) => sum + parseMoney(t.komisi_capster || t.capster_comm), 0);
+            const totalMeal = trans.reduce((sum, t) => sum + parseMoney(t.uang_makan || t.meal_allowance), 0);
+
+            const totalNet = trans.reduce((sum, t) => sum + parseMoney(t.setoran_owner || t.net_to_owner), 0);
+            const totalExp = exps.reduce((sum, e) => sum + parseMoney(e.jumlah || e.total), 0);
+
+            // Hitung pelanggan unik dari transaksi
+            const uniqueCusts = new Set(trans.map(t => t.customer_id).filter(id => id)).size;
+
+            const formatStat = (val) => `<span class="rp-label">Rp</span> ${val.toLocaleString()}`;
+
+            document.getElementById('stat-revenue').innerHTML = formatStat(totalRevenue);
+            document.getElementById('stat-cash').innerHTML = formatStat(totalCash);
+            document.getElementById('stat-qris').innerHTML = formatStat(totalQRIS);
+            document.getElementById('stat-payout').innerHTML = formatStat(totalPayout);
+            document.getElementById('stat-meal').innerHTML = formatStat(totalMeal);
+            document.getElementById('stat-net').innerHTML = formatStat(totalNet);
+            document.getElementById('stat-expenses').innerHTML = formatStat(totalExp);
+            document.getElementById('stat-customers').textContent = uniqueCusts;
+            document.getElementById('stat-services').textContent = dbData.services ? dbData.services.length : 0;
+
+            // Init Chart (Data dari 7 hari terakhir)
+            const ctx = document.getElementById('revenueChart').getContext('2d');
+            if (window.myChart) window.myChart.destroy();
+
+            // Dummy chart labels tapi data omset bisa diambil dari total jika ingin lebih kompleks
+            window.myChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'],
+                    datasets: [{
+                        label: 'Pendapatan (Juta)',
+                        data: [1.2, 1.9, 1.5, 2.5, 3.2, 4.5, totalRevenue / 1000000],
+                        borderColor: '#6366f1',
+                        backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { grid: { color: 'rgba(255,255,255,0.05)' } } }
+                }
+            });
+        }
+
+        function renderServices() {
+            const container = document.getElementById('pos-services');
+            if (!container) return;
+
+            if (!dbData.services || dbData.services.length === 0) {
+                container.innerHTML = '<p style="color: var(--text-dim); text-align: center; grid-column: 1/-1; padding: 20px;">Memuat data layanan...</p>';
+                return;
+            }
+
+            container.innerHTML = dbData.services.map(s => `
+                <div class="service-item" id="srv-${s.id}" onclick="addToCart('${s.id}')">
+                    <i class="fas ${s.kategori === 'Jasa' ? 'fa-cut' : 'fa-box'}" style="font-size: 1.5rem; margin-bottom: 10px;"></i>
+                    <div style="font-weight: 600;">${s.nama}</div>
+                    <span class="service-price">Rp ${parseInt(s.harga).toLocaleString()}</span>
+                </div>
+            `).join('');
+        }
+
+        function addToCart(id) {
+            const item = dbData.services.find(s => s.id == id);
+            if (!item) return;
+            cart.push(item);
+            renderCart();
+            // Basic feedback
+            const el = document.getElementById('srv-' + id);
+            if (el) {
+                el.style.transform = 'scale(0.95)';
+                setTimeout(() => el.style.transform = '', 100);
+            }
+        }
+
+        function renderCart() {
+            const list = document.getElementById('pos-items-list');
+            const totalEl = document.getElementById('pos-total-price');
+            if (!list || !totalEl) return;
+
+            if (cart.length === 0) {
+                list.innerHTML = '<p style="color: var(--text-dim); text-align: center; margin-top: 50px;">Belum ada item dipilih</p>';
+                totalEl.textContent = 'Rp 0';
+                return;
+            }
+
+            let total = 0;
+            list.innerHTML = cart.map((item, idx) => {
+                total += parseInt(item.harga);
+                return `
+                    <div class="flex-between glass-card" style="padding: 12px; margin-bottom: 8px; background: var(--glass); transform: none; box-shadow: none;">
+                        <div>
+                            <div style="font-weight: 500;">${item.nama}</div>
+                            <div style="font-size: 0.8rem; color: var(--text-dim);">Rp ${parseInt(item.harga).toLocaleString()}</div>
+                        </div>
+                        <button class="btn" style="padding: 5px; color: var(--danger);" onclick="removeFromCart(${idx})">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                `;
+            }).join('');
+
+            totalEl.textContent = `Rp ${total.toLocaleString()}`;
+        }
+
+        function removeFromCart(index) {
+            cart.splice(index, 1);
+            renderCart();
+        }
+
+        function renderCapsters() {
+            const tbody = document.querySelector('#capsters-table tbody');
+            if (!tbody) return;
+            tbody.innerHTML = dbData.capsters.map(c => {
+                const branch = dbData.branches.find(b => String(b.id) === String(c.cabang_id));
+                const branchName = branch ? branch.nama : `<span style="color:var(--danger)">Belum Ada</span>`;
+
+                return `
+                    <tr>
+                        <td><div style="font-weight: 600;">${c.nama}</div></td>
+                        <td>${branchName}</td>
+                        <td>Rp ${parseInt(c.gaji_pokok || 0).toLocaleString()}</td>
+                        <td>${c.persen_komisi}%</td>
+                        <td>Rp ${parseInt(c.uang_makan || 0).toLocaleString()}</td>
+                        <td><span class="badge badge-success">${c.status || 'Aktif'}</span></td>
+                        <td>
+                            <button class="btn btn-glass" onclick="editCapster('${c.id}')" style="padding: 8px;"><i class="fas fa-edit"></i> Edit</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // --- SUB-MENU LOGIC ---
+        function switchSubTab(targetId, btn) {
+            // Update Tab Buttons
+            const parent = btn.parentElement;
+            parent.querySelectorAll('.sub-nav-item').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+
+            // Update View Content
+            const section = btn.closest('.view');
+            section.querySelectorAll('.sub-view-content').forEach(v => v.style.display = 'none');
+            document.getElementById('sub-view-' + targetId).style.display = 'block';
+        }
+
+        function renderCustomersList() {
+            const posCustomerInput = document.getElementById('pos-customer');
+            if (!posCustomerInput) return;
+
+            // Create or update a datalist for easy searching
+            let datalist = document.getElementById('customer-list');
+            if (!datalist) {
+                datalist = document.createElement('datalist');
+                datalist.id = 'customer-list';
+                posCustomerInput.setAttribute('list', 'customer-list');
+                posCustomerInput.parentNode.appendChild(datalist);
+            }
+
+            if (!dbData.customers || dbData.customers.length === 0) {
+                datalist.innerHTML = '';
+                return;
+            }
+
+            datalist.innerHTML = dbData.customers.map(c => `
+                <option value="${c.nama} (${c.whatsapp})" data-id="${c.id}">
+            `).join('');
+        }
+
+        function renderPayroll() {
+            const tbody = document.querySelector('#payroll-table tbody');
+            if (!tbody) return;
+
+            // Filter capsters based on role
+            let displayData = dbData.capsters;
+            if (currentUser.role !== 'owner') {
+                displayData = dbData.capsters.filter(c => String(c.id) === String(currentUser.id));
+            }
+
+            if (displayData.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center">Data tidak ditemukan</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = displayData.map(c => {
+                const base = parseInt(c.gaji_pokok || 0);
+                const meal = parseInt(c.uang_makan || 0) * 26;
+
+                // Hitung komisi asli dari transaksi
+                const capsterTrans = (dbData.transactions || []).filter(t => String(t.capster_id) === String(c.id));
+                const actualComm = capsterTrans.reduce((sum, t) => sum + (parseInt(t.komisi_capster || t.capster_comm) || 0), 0);
+
+                const total = base + meal + actualComm;
+                return `
+                    <tr>
+                        <td>${c.nama}</td>
+                        <td>Rp ${base.toLocaleString()}</td>
+                        <td>Rp ${actualComm.toLocaleString()}</td>
+                        <td>Rp ${meal.toLocaleString()}</td>
+                        <td><strong style="color: var(--secondary)">Rp ${total.toLocaleString()}</strong></td>
+                        <td><button class="btn btn-glass" onclick="showPayrollDetail('${c.id}')" style="padding: 5px 10px;">Detail</button></td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        async function submitTransaction() {
+            const customerInput = document.getElementById('pos-customer').value.trim();
+            if (!customerInput) {
+                return alert('⚠️ Wajib input pelanggan! Mohon pilih dari daftar atau ketik nama pelanggan.');
+            }
+
+            if (cart.length === 0) return alert('Pilih jasa dulu!');
+
+            const paymentMethod = document.getElementById('selected-payment-method').value;
+            if (!paymentMethod) {
+                return alert('⚠️ Wajib memilih metode pembayaran (Cash/QRIS)!');
+            }
+
+            const btn = document.querySelector('button[onclick="submitTransaction()"]');
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memproses...';
+
+            const total = cart.reduce((sum, item) => sum + parseMoney(item.harga), 0);
+
+            // ... ID lookup ...
+            let selectedCustomerId = null;
+            if (customerInput) {
+                const match = customerInput.match(/\((.*?)\)/);
+                const waFromInput = match ? match[1] : customerInput;
+                const customerObj = dbData.customers.find(c =>
+                    String(c.whatsapp) === String(waFromInput) ||
+                    String(c.nama) === String(customerInput) ||
+                    `${c.nama} (${c.whatsapp})` === customerInput
+                );
+                if (customerObj) selectedCustomerId = customerObj.id;
+            }
+
+            const commPercent = parseMoney(currentUser.persen_komisi) || 20;
+            const commValue = total * (commPercent / 100);
+
+            const today = new Date().toISOString().split('T')[0];
+            const hasTransToday = (dbData.transactions || []).some(t =>
+                String(t.capster_id) === String(currentUser.id) &&
+                String(t.tanggal).startsWith(today)
+            );
+            const mealValue = hasTransToday ? 0 : parseMoney(currentUser.uang_makan);
+
+            const payload = {
+                action: 'save_transaction',
+                branch_id: currentUser.cabang_id || 'BR-101',
+                capster_id: currentUser.id || 'C-001',
+                customer_id: selectedCustomerId,
+                items: cart,
+                total: total,
+                capster_comm: commValue,
+                meal_allowance: mealValue,
+                net_to_owner: total - commValue - mealValue,
+                payment_method: document.getElementById('selected-payment-method').value
+            };
+
+            try {
+                await fetch(APP_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    body: JSON.stringify(payload)
+                });
+
+                // Optimistic UI Update: Langsung masukkan data ke tampilan lokal agar real-time
+                const tempTx = {
+                    ...payload,
+                    id: 'TEMP-' + Date.now(),
+                    tanggal: new Date().toISOString()
+                };
+                if (!dbData.transactions) dbData.transactions = [];
+                dbData.transactions.push(tempTx);
+
+                // Update UI Seketika
+                renderDashboard();
+                cart = [];
+                document.getElementById('pos-customer').value = '';
+                renderCart();
+
+                alert(`Transaksi untuk ${customerInput || 'Guest'} senilai Rp ${total.toLocaleString()} Berhasil Disimpan!`);
+
+                // Sinkronisasi ulang dengan data asli di background (jika perlu)
+                fetchDataFromGAS();
+            } catch (err) {
+                alert('Gagal menyimpan transaksi: ' + err.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        }
+
+        async function postAttendance(status) {
+            const btn = event.currentTarget; // Get the specific button clicked
+            const originalText = btn.innerHTML;
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Mendata...';
+
+            const payload = {
+                action: 'save_attendance',
+                capster_id: currentUser.id || 'C001',
+                status: status
+            };
+
+            try {
+                await fetch(APP_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    body: JSON.stringify(payload)
+                });
+                alert(`Absensi ${status} untuk ${currentUser.name} Berhasil dicatat!`);
+            } catch (err) {
+                alert('Gagal absensi: ' + err.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        }
+
+        function renderAttendance() {
+            const tbody = document.querySelector('#attendance-table tbody');
+            if (!tbody) return;
+
+            let logs = dbData.attendance || [];
+
+            // Jika bukan owner, hanya tampilkan absen milik sendiri
+            if (currentUser.role !== 'owner') {
+                logs = logs.filter(l => String(l.capster_id) === String(currentUser.id));
+            }
+
+            if (logs.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center">Belum ada data absensi.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = [...logs].reverse().map(l => {
+                const staff = dbData.capsters.find(s => String(s.id) === String(l.capster_id));
+                const name = staff ? staff.nama : (l.capster_id || 'Unknown');
+
+                let statusClass = 'badge-success';
+                if (l.status === 'Izin' || l.status === 'Sakit') statusClass = 'badge-warning';
+
+                // Format Tanggal & Jam agar bersih dari 1899 atau seconds
+                const formatDate = (str) => {
+                    if (!str || str === '-') return '-';
+                    return str.split(' ')[0]; // Ambil YYYY-MM-DD saja
+                };
+                const formatTime = (str) => {
+                    if (!str || str === '-') return '-';
+                    // Jika ada format 1899-12-30 09:58:30 -> ambil 09:58
+                    const parts = str.split(' ');
+                    const timePart = parts.length > 1 ? parts[1] : parts[0];
+                    return timePart.split(':').slice(0, 2).join(':'); // Ambil HH:mm
+                };
+
+                return `
+                    <tr>
+                        <td>${formatDate(l.tanggal)}</td>
+                        <td><div style="font-weight:600">${name}</div></td>
+                        <td>${formatTime(l.jam_masuk || l.timestamp)}</td>
+                        <td><span class="badge ${statusClass}">${l.status}</span></td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function renderCustomersView() {
+            const tbody = document.querySelector('#customers-db-table tbody');
+            const search = document.getElementById('search-cust-db').value.toLowerCase();
+            if (!tbody) return;
+
+            const filtered = dbData.customers.filter(c =>
+                c.nama.toLowerCase().includes(search) ||
+                c.whatsapp.toLowerCase().includes(search)
+            );
+
+            tbody.innerHTML = filtered.map(c => `
+                <tr>
+                    <td><div style="font-weight: 600;">${c.nama}</div></td>
+                    <td>${c.whatsapp}</td>
+                    <td>${c.jumlah_kunjungan}x</td>
+                    <td>${c.poin_loyalitas}</td>
+                    <td>${c.kunjungan_terakhir}</td>
+                    <td>
+                        <button class="btn btn-glass" onclick="showCustomerDetail('${c.id}')" style="padding: 5px 8px; font-size: 0.8rem;"><i class="fas fa-history"></i> Log</button>
+                        <button class="btn btn-glass" onclick="editCustomer('${c.id}')" style="padding: 5px 8px; font-size: 0.8rem; color: var(--secondary);"><i class="fas fa-edit"></i> Edit</button>
+                    </td>
+                </tr>
+                `).join('');
+        }
+
+        function renderMyCustomers() {
+            const tbody = document.querySelector('#my-customers-table tbody');
+            if (!tbody) return;
+
+            let data = dbData.transactions || [];
+            // Filter hanya data capster yang sedang login
+            if (currentUser.role !== 'owner') {
+                data = data.filter(t => String(t.capster_id) === String(currentUser.id));
+            }
+
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center">Belum ada riwayat pelanggan.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = [...data].reverse().map(t => {
+                const customer = dbData.customers.find(c => String(c.id) === String(t.customer_id));
+                const custName = customer ? customer.nama : (t.customer_id || 'Walk-in');
+
+                let items = [];
+                try {
+                    items = typeof t.item_json === 'string' ? JSON.parse(t.item_json) : t.item_json;
+                } catch (e) { items = []; }
+
+                const itemNames = items.map(it => `
+                < div style = "font-size:0.85rem; display:flex; justify-content:space-between; margin-bottom:2px;" >
+                        <span>• ${it.nama}</span>
+                        <span style="color:var(--text-dim)">Rp ${parseMoney(it.harga).toLocaleString()}</span>
+                    </div >
+                `).join('');
+
+                const comm = parseMoney(t.komisi_capster || t.capster_comm);
+                const meal = parseMoney(t.uang_makan || t.meal_allowance);
+
+                return `
+                < tr >
+                        <td>${new Date(t.tanggal).toLocaleDateString('id-ID')}</td>
+                        <td><div style="font-weight:600">${custName}</div></td>
+                        <td><div style="max-width:250px">${itemNames}</div></td>
+                        <td><span class="badge" style="background:rgba(255,255,255,0.1)">${t.metode_bayar || t.payment_method || 'Cash'}</span></td>
+                        <td>
+                            <div style="color:var(--secondary); font-weight:700">Rp ${comm.toLocaleString()}</div>
+                            ${meal > 0 ? `<div style="font-size:0.75rem; color:var(--danger)">+ Rp ${meal.toLocaleString()} (Uang Makan)</div>` : ''}
+                            <div style="font-size:0.75rem; color:var(--text-dim)">Detail Komisi</div>
+                        </td>
+                    </tr >
+                `;
+            }).join('');
+        }
+
+        function setPaymentMethod(method, btn) {
+            document.getElementById('selected-payment-method').value = method;
+            const btns = document.querySelectorAll('#pos-payment-methods .btn');
+            btns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        }
+
+        function renderPaymentMethodsInPOS() {
+            const container = document.getElementById('pos-payment-methods');
+            if (!container) return;
+            const methods = (dbData.settings.metode_pembayaran || 'Cash,QRIS').split(',');
+            container.innerHTML = methods.map((m, i) => `
+                < button class="btn btn-glass" style = "flex:1; padding: 10px; font-size: 0.85rem;" onclick = "setPaymentMethod('${m.trim()}', this)" >
+                    <i class="fas ${m.trim().toLowerCase() === 'cash' ? 'fa-money-bill-wave' : 'fa-qrcode'}"></i> ${m.trim()}
+                </button >
+                `).join('');
+            document.getElementById('selected-payment-method').value = ''; // Reset, force choice
+        }
+
+        async function savePaymentSetting() {
+            const val = document.getElementById('payment-methods-input').value.trim();
+            if (!val) return alert('Input tidak boleh kosong!');
+
+            const btn = event.currentTarget;
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...';
+
+            try {
+                const response = await fetch(APP_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    body: JSON.stringify({
+                        action: 'update_setting',
+                        key: 'metode_pembayaran',
+                        value: val
+                    })
+                });
+
+                alert('Metode Pembayaran Berhasil Diperbarui!');
+                dbData.settings.metode_pembayaran = val;
+                renderPaymentMethodsInPOS();
+            } catch (err) {
+                alert('Gagal simpan: ' + err.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        }
+
+        function renderExpenses() {
+            const tbody = document.querySelector('#expenses-table tbody');
+            if (!tbody) return;
+
+            let data = dbData.expenses || [];
+            if (currentUser.role !== 'owner') {
+                data = data.filter(e => String(e.cabang_id) === String(currentUser.cabang_id));
+            }
+
+            tbody.innerHTML = data.map(e => `
+                < tr >
+                    <td>${e.tanggal}</td>
+                    <td>${dbData.branches.find(b => String(b.id) === String(e.cabang_id))?.nama || e.cabang_id}</td>
+                    <td><span class="badge" style="background:rgba(255,255,255,0.1)">${e.kategori}</span></td>
+                    <td>${e.keterangan}</td>
+                    <td style="color:var(--danger)">Rp ${parseInt(e.jumlah || e.total).toLocaleString()}</td>
+                </tr >
+                `).join('');
+        }
+
+        function showExpenseModal() {
+            openModal('Catat Pengeluaran Baru', [
+                { label: 'Cabang', key: 'cabang_id', value: currentUser.cabang_id },
+                { label: 'Kategori', key: 'kategori', placeholder: 'Sewa / Listrik / Alat / Sabun' },
+                { label: 'Keterangan', key: 'keterangan', placeholder: 'Contoh: Bayar Listrik Bln Feb' },
+                { label: 'Jumlah (Rp)', key: 'jumlah', type: 'number', placeholder: 'Harga...' }
+            ], '', 'save_expense');
+        }
+
+        function renderStaffData() {
+            const tbody = document.querySelector('#staff-identity-table tbody');
+            if (!tbody) return;
+            tbody.innerHTML = dbData.capsters.map(c => `
+                <tr>
+                    <td><div style="font-weight: 600;">${c.nama}</div></td>
+                    <td>${c.whatsapp}</td>
+                    <td>${c.peran || 'capster'}</td>
+                    <td>******</td>
+                    <td>
+                        <button class="btn btn-glass" onclick="editStaffIdentity('${c.id}')" style="padding: 8px;"><i class="fas fa-id-card"></i> Identitas</button>
+                    </td>
+                </tr>
+                `).join('');
+        }
+
+        function showCustomerDetail(id) {
+            const c = dbData.customers.find(item => String(item.id) === String(id));
+            if (!c) return;
+
+            // Get transactions for this customer
+            const logs = (dbData.transactions || []).filter(t => String(t.customer_id) === String(id));
+
+            let logHtml = `
+                <div style="margin-bottom: 20px;">
+                    <p><strong>Nama:</strong> ${c.nama}</p>
+                    <p><strong>WhatsApp:</strong> ${c.whatsapp}</p>
+                    <p><strong>Total Kunjungan:</strong> ${c.jumlah_kunjungan}x</p>
+                </div>
+                <table class="table-container" style="width: 100%; font-size: 0.9rem;">
+                    <thead>
+                        <tr style="text-align: left; border-bottom: 1px solid var(--glass-border);">
+                            <th>Tanggal</th>
+                            <th>Cabang</th>
+                            <th>Jasa/Produk</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${logs.length > 0 ? logs.map(l => {
+                const branch = dbData.branches.find(b => String(b.id) === String(l.cabang_id))?.nama || 'Unknown';
+                return `
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                                    <td style="padding: 10px 0;">${l.tanggal}</td>
+                                    <td>${branch}</td>
+                                    <td>${l.item_json ? JSON.parse(l.item_json).map(i => i.nama).join(', ') : '-'}</td>
+                                    <td>Rp ${parseInt(l.total).toLocaleString()}</td>
+                                </tr>
+                            `;
+            }).join('') : '<tr><td colspan="4" style="text-align:center; padding: 20px;">Belum ada riwayat cukur.</td></tr>'}
+                    </tbody>
+                </table>
+            `;
+
+            document.getElementById('log-modal-title').textContent = 'Riwayat Cukur: ' + c.nama;
+            document.getElementById('log-modal-content').innerHTML = logHtml;
+            document.getElementById('log-modal').style.display = 'flex';
+        }
+
+        function editCustomer(id) {
+            const c = dbData.customers.find(item => String(item.id) === String(id));
+            if (!c) return;
+
+            openModal('Edit Pelanggan: ' + c.nama, [
+                { label: 'Nama Pelanggan', key: 'nama', value: c.nama },
+                { label: 'WhatsApp', key: 'whatsapp', value: c.whatsapp },
+                { label: 'Poin Loyalitas', key: 'poin_loyalitas', value: c.poin_loyalitas, type: 'number' }
+            ], id, 'update_customer');
+        }
+
+        function closeLogModal() {
+            document.getElementById('log-modal').style.display = 'none';
+        }
+
+        function showPayrollDetail(capsterId) {
+            const c = dbData.capsters.find(item => String(item.id) === String(capsterId));
+            if (!c) return;
+
+            // Hitung komisi asli dari riwayat transaksi
+            const capsterTrans = (dbData.transactions || []).filter(t => String(t.capster_id) === String(capsterId));
+            const totalComm = capsterTrans.reduce((sum, t) => sum + (parseInt(t.komisi_capster || t.capster_comm) || 0), 0);
+
+            const base = parseInt(c.gaji_pokok || 0);
+            const meal = parseInt(c.uang_makan || 0) * 26;
+            const totalOverall = base + meal + totalComm;
+
+            let detailHtml = `
+                <div style="margin-bottom: 20px;">
+                    <h3>${c.nama} - Rincian Gaji</h3>
+                </div>
+                <div class="glass-card" style="margin-bottom: 15px;">
+                    <p>Gaji Pokok: <span style="float:right">Rp ${base.toLocaleString()}</span></p>
+                    <p>Uang Makan (26 hari): <span style="float:right">Rp ${meal.toLocaleString()}</span></p>
+                    <p>Komisi Jasa (${c.persen_komisi}%): <span style="float:right">Rp ${totalComm.toLocaleString()}</span></p>
+                    <hr style="border: 0.5px solid var(--glass-border); margin: 10px 0;">
+                    <p style="font-weight:700">Total Take Home Pay: <span style="float:right; color:var(--secondary)">Rp ${totalOverall.toLocaleString()}</span></p>
+                </div>
+                <p style="font-size: 0.8rem; color: var(--text-dim); margin-bottom: 1rem;">* Komisi dihitung dari ${capsterTrans.length} total transaksi yang dikerjakan.</p>
+                <button class="btn btn-primary" style="width: 100%;" onclick="closeLogModal()">TUTUP</button>
+            `;
+
+            document.getElementById('log-modal-title').textContent = 'Detail Gaji Personel';
+            document.getElementById('log-modal-content').innerHTML = detailHtml;
+            document.getElementById('log-modal').style.display = 'flex';
+        }
+
+        function renderBranches() {
+            const tbody = document.querySelector('#branches-table tbody');
+            if (!tbody) return;
+            tbody.innerHTML = dbData.branches.map(b => {
+                const staffCount = dbData.capsters.filter(c => String(c.cabang_id) === String(b.id)).length;
+                return `
+                    <tr>
+                        <td><div style="font-weight: 600;">${b.nama}</div></td>
+                        <td>${b.alamat}</td>
+                        <td>
+                            <div style="font-weight: 500;">${b.manajer_id}</div>
+                            <div style="font-size: 0.75rem; color: var(--secondary); margin-top: 4px;">
+                                <i class="fas fa-users"></i> ${staffCount} Personel
+                            </div>
+                        </td>
+                        <td>
+                            <button class="btn btn-glass" onclick="editBranch('${b.id}')" style="padding: 8px;"><i class="fas fa-edit"></i> Edit</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function closeModal() {
+            document.getElementById('modal-container').style.display = 'none';
+        }
+
+        function openModal(title, fields, id = '', action = '') {
+            document.getElementById('modal-title').textContent = title;
+            document.getElementById('form-id').value = id;
+            document.getElementById('generic-form').setAttribute('data-action', action);
+
+            const container = document.getElementById('form-fields');
+            container.innerHTML = fields.map(f => `
+                <div class="form-group">
+                    <label class="form-label">${f.label}</label>
+                    <input type="${f.type || 'text'}" class="form-input" id="field-${f.key}" value="${f.value || ''}" placeholder="${f.placeholder || ''}">
+                </div>
+            `).join('');
+
+            document.getElementById('modal-container').style.display = 'flex';
+        }
+
+        function editCapster(id) {
+            const c = dbData.capsters.find(item => String(item.id) === String(id));
+            if (!c) return;
+
+            openModal('Manajemen Operasional: ' + c.nama, [
+                { label: 'Cabang Penempatan', key: 'cabang_id', value: c.cabang_id },
+                { label: 'Gaji Pokok', key: 'gaji_pokok', value: c.gaji_pokok, type: 'number' },
+                { label: 'Komisi (%)', key: 'persen_komisi', value: c.persen_komisi, type: 'number' },
+                { label: 'Uang Makan /Hari', key: 'uang_makan', value: c.uang_makan, type: 'number' },
+                { label: 'Status Aktif', key: 'status', value: c.status }
+            ], id, 'update_capster');
+        }
+
+        function editStaffIdentity(id) {
+            const c = dbData.capsters.find(item => String(item.id) === String(id));
+            if (!c) return;
+
+            openModal('Detail Identitas & Akses: ' + c.nama, [
+                { label: 'Nama Lengkap', key: 'nama', value: c.nama },
+                { label: 'WhatsApp (Login ID)', key: 'whatsapp', value: c.whatsapp },
+                { label: 'Password Baru', key: 'password', value: c.password, placeholder: 'Ketik ulang jika ingin ganti' },
+                { label: 'Peran', key: 'peran', value: c.peran || 'capster' }
+            ], id, 'update_capster'); // Tetap update_capster karena hook backend sama
+        }
+
+        function showCapsterModal() {
+            openModal('Rekrut Karyawan Baru', [
+                { label: 'Nama Lengkap', key: 'nama', placeholder: 'Nama sesuai KTP...' },
+                { label: 'WhatsApp', key: 'whatsapp', placeholder: '628...' },
+                { label: 'Password Awal', key: 'password', value: '123456' },
+                { label: 'ID Cabang Awalan', key: 'cabang_id', placeholder: 'BR-...' }
+            ], '', 'update_capster');
+        }
+
+        function showBranchModal() {
+            openModal('Tambah Cabang Baru', [
+                { label: 'Nama Cabang', key: 'nama', placeholder: 'Contoh: Barber Pusat' },
+                { label: 'Alamat', key: 'alamat', placeholder: 'Alamat lengkap...' },
+                { label: 'ID Manajer', key: 'manajer_id', placeholder: 'ID User Manajer' }
+            ], '', 'save_branch');
+        }
+
+        function editBranch(id) {
+            const b = dbData.branches.find(item => String(item.id) === String(id));
+            if (!b) return;
+
+            openModal('Edit Cabang: ' + b.nama, [
+                { label: 'Nama Cabang', key: 'nama', value: b.nama },
+                { label: 'Alamat', key: 'alamat', value: b.alamat },
+                { label: 'ID Manajer', key: 'manajer_id', value: b.manajer_id }
+            ], id, 'update_branch');
+        }
+
+        document.getElementById('generic-form').onsubmit = async function (e) {
+            e.preventDefault();
+            const action = this.getAttribute('data-action');
+            const id = document.getElementById('form-id').value;
+
+            const payload = { action: action, id: id };
+            const fields = document.querySelectorAll('[id^="field-"]');
+            fields.forEach(f => {
+                const key = f.id.replace('field-', '');
+                payload[key] = f.value;
+            });
+
+            const btn = this.querySelector('button[type="submit"]');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...';
+
+            try {
+                await fetch(APP_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    body: JSON.stringify(payload)
+                });
+
+                alert('Data berhasil dikirim ke server! Terimakasih.');
+                closeModal();
+                setTimeout(() => fetchDataFromGAS(), 1500);
+            } catch (err) {
+                alert('Gagal menyimpan data: ' + err.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = 'SIMPAN PERUBAHAN <i class="fas fa-save"></i>';
+            }
+        };
+    </script>
+</body>
+
+</html>
