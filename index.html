@@ -1699,7 +1699,6 @@
             try {
                 await fetch(APP_URL, {
                     method: 'POST',
-                    mode: 'no-cors',
                     body: JSON.stringify(payload)
                 });
 
@@ -1746,7 +1745,6 @@
             try {
                 await fetch(APP_URL, {
                     method: 'POST',
-                    mode: 'no-cors',
                     body: JSON.stringify(payload)
                 });
                 alert(`Absensi ${status} untuk ${currentUser.name} Berhasil dicatat!`);
@@ -1855,17 +1853,17 @@
                 } catch (e) { items = []; }
 
                 const itemNames = items.map(it => `
-                < div style = "font-size:0.85rem; display:flex; justify-content:space-between; margin-bottom:2px;" >
+                    <div style="font-size:0.85rem; display:flex; justify-content:space-between; margin-bottom:2px;">
                         <span>• ${it.nama}</span>
                         <span style="color:var(--text-dim)">Rp ${parseMoney(it.harga).toLocaleString()}</span>
-                    </div >
+                    </div>
                 `).join('');
 
                 const comm = parseMoney(t.komisi_capster || t.capster_comm);
                 const meal = parseMoney(t.uang_makan || t.meal_allowance);
 
                 return `
-                < tr >
+                    <tr>
                         <td>${new Date(t.tanggal).toLocaleDateString('id-ID')}</td>
                         <td><div style="font-weight:600">${custName}</div></td>
                         <td><div style="max-width:250px">${itemNames}</div></td>
@@ -1875,7 +1873,7 @@
                             ${meal > 0 ? `<div style="font-size:0.75rem; color:var(--danger)">+ Rp ${meal.toLocaleString()} (Uang Makan)</div>` : ''}
                             <div style="font-size:0.75rem; color:var(--text-dim)">Detail Komisi</div>
                         </td>
-                    </tr >
+                    </tr>
                 `;
             }).join('');
         }
@@ -1892,9 +1890,9 @@
             if (!container) return;
             const methods = (dbData.settings.metode_pembayaran || 'Cash,QRIS').split(',');
             container.innerHTML = methods.map((m, i) => `
-                < button class="btn btn-glass" style = "flex:1; padding: 10px; font-size: 0.85rem;" onclick = "setPaymentMethod('${m.trim()}', this)" >
+                <button class="btn btn-glass" style="flex:1; padding: 10px; font-size: 0.85rem;" onclick="setPaymentMethod('${m.trim()}', this)">
                     <i class="fas ${m.trim().toLowerCase() === 'cash' ? 'fa-money-bill-wave' : 'fa-qrcode'}"></i> ${m.trim()}
-                </button >
+                </button>
                 `).join('');
             document.getElementById('selected-payment-method').value = ''; // Reset, force choice
         }
@@ -1911,7 +1909,6 @@
             try {
                 const response = await fetch(APP_URL, {
                     method: 'POST',
-                    mode: 'no-cors',
                     body: JSON.stringify({
                         action: 'update_setting',
                         key: 'metode_pembayaran',
@@ -2178,9 +2175,24 @@
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...';
 
             try {
+                // Optimistic Local Update untuk data capster agar 'Realtime'
+                if (action === 'update_capster' && id) {
+                    const idx = dbData.capsters.findIndex(it => String(it.id) === String(id));
+                    if (idx !== -1) {
+                        fields.forEach(f => {
+                            const key = f.id.replace('field-', '');
+                            dbData.capsters[idx][key] = f.value;
+                        });
+                        // Re-render semua yang terpengaruh
+                        renderDashboard();
+                        renderPayroll();
+                        renderCapsters();
+                        renderStaffData();
+                    }
+                }
+
                 await fetch(APP_URL, {
                     method: 'POST',
-                    mode: 'no-cors',
                     body: JSON.stringify(payload)
                 });
 
