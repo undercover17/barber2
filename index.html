@@ -11,6 +11,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <style>
         :root {
@@ -320,6 +322,19 @@
         .form-input:focus {
             border-color: var(--primary);
             box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+        }
+
+        /* Date Picker Styling */
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            filter: invert(1);
+            cursor: pointer;
+            opacity: 0.6;
+            transition: var(--transition);
+        }
+
+        input[type="date"]::-webkit-calendar-picker-indicator:hover {
+            opacity: 1;
+            transform: scale(1.2);
         }
 
         /* --- LOGIN PAGE --- */
@@ -700,6 +715,9 @@
             <div class="nav-link" data-view="pos">
                 <i class="fas fa-cash-register"></i> <span class="nav-text">Kasir (POS)</span>
             </div>
+            <div class="nav-link" data-view="customers-db" id="nav-customers">
+                <i class="fas fa-address-book"></i> <span class="nav-text">Database Pelanggan</span>
+            </div>
             <div class="nav-link" data-view="attendance">
                 <i class="fas fa-calendar-check"></i> <span class="nav-text">Absensi</span>
             </div>
@@ -707,22 +725,25 @@
                 <i class="fas fa-users-cog"></i> <span class="nav-text">Pelanggan Saya</span>
             </div>
 
-            <div class="nav-section" id="nav-section-op">Manajemen OP</div>
+            <div class="nav-section">LAPORAN & HARIAN</div>
 
-            <div class="nav-link" data-view="management" id="nav-management">
-                <i class="fas fa-user-tie"></i> <span class="nav-text">Karyawan</span>
+            <div class="nav-link" data-view="expenses" id="nav-expenses">
+                <i class="fas fa-file-invoice-dollar"></i> <span class="nav-text">Biaya & Pengeluaran</span>
             </div>
-            <div class="nav-link" data-view="branches" id="nav-branches">
-                <i class="fas fa-store"></i> <span class="nav-text">Manajemen Cabang</span>
+            <div class="nav-link" data-view="payouts" id="nav-payouts">
+                <i class="fas fa-hand-holding-usd"></i> <span class="nav-text">Setoran</span>
             </div>
-            <div class="nav-link" data-view="customers-db" id="nav-customers">
-                <i class="fas fa-address-book"></i> <span class="nav-text">Database Pelanggan</span>
-            </div>
+
+            <div class="nav-section" id="nav-section-admin">ADMINISTRASI</div>
+
             <div class="nav-link" data-view="reports" id="nav-reports">
                 <i class="fas fa-chart-line"></i> <span class="nav-text">Laporan Gaji</span>
             </div>
-            <div class="nav-link" data-view="expenses" id="nav-expenses">
-                <i class="fas fa-file-invoice-dollar"></i> <span class="nav-text">Biaya & Pengeluaran</span>
+            <div class="nav-link" data-view="management" id="nav-management">
+                <i class="fas fa-user-tie"></i> <span class="nav-text">Manajemen Karyawan</span>
+            </div>
+            <div class="nav-link" data-view="branches" id="nav-branches">
+                <i class="fas fa-store"></i> <span class="nav-text">Manajemen Cabang</span>
             </div>
             <div class="nav-link" data-view="payment-settings" id="nav-payment-settings">
                 <i class="fas fa-credit-card"></i> <span class="nav-text">Metode Pembayaran</span>
@@ -748,6 +769,37 @@
                 </div>
                 <div class="badge badge-success">
                     <i class="fas fa-circle" style="font-size: 8px; margin-right: 5px;"></i> Online
+                </div>
+            </div>
+
+            <!-- Filter Bar Dashboard -->
+            <div class="glass-card"
+                style="margin-bottom: 2rem; padding: 1.25rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; border-left: 4px solid var(--primary);">
+                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                    <button class="btn btn-glass active dashboards-period-btn"
+                        onclick="setDashboardPeriod('today', this)" style="padding: 8px 16px; font-size: 0.85rem;">Hari
+                        Ini</button>
+                    <button class="btn btn-glass dashboards-period-btn" onclick="setDashboardPeriod('yesterday', this)"
+                        style="padding: 8px 16px; font-size: 0.85rem;">Kemarin</button>
+                    <button class="btn btn-glass dashboards-period-btn" onclick="setDashboardPeriod('week', this)"
+                        style="padding: 8px 16px; font-size: 0.85rem;">7 Hari</button>
+                    <button class="btn btn-glass dashboards-period-btn" onclick="setDashboardPeriod('month', this)"
+                        style="padding: 8px 16px; font-size: 0.85rem;">Bulan Ini</button>
+                    <button class="btn btn-glass dashboards-period-btn" onclick="setDashboardPeriod('year', this)"
+                        style="padding: 8px 16px; font-size: 0.85rem;">Tahun Ini</button>
+                </div>
+                <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                    <div
+                        style="display: flex; align-items: center; gap: 8px; background: rgba(0,0,0,0.2); padding: 5px 12px; border-radius: 10px; border: 1px solid var(--glass-border);">
+                        <i class="fas fa-calendar-alt" style="color: var(--primary); font-size: 0.8rem;"></i>
+                        <input type="date" id="dash-start-date" class="form-input"
+                            style="width: auto; padding: 4px; font-size: 0.8rem; background: transparent; border: none; height: auto; cursor: pointer;"
+                            onchange="setDashboardPeriod('custom')" onclick="this.showPicker()">
+                        <span style="color: var(--text-dim); font-size: 0.8rem;">s/d</span>
+                        <input type="date" id="dash-end-date" class="form-input"
+                            style="width: auto; padding: 4px; font-size: 0.8rem; background: transparent; border: none; height: auto; cursor: pointer;"
+                            onchange="setDashboardPeriod('custom')" onclick="this.showPicker()">
+                    </div>
                 </div>
             </div>
 
@@ -867,8 +919,16 @@
                                     placeholder="Cari atau Tambah Baru...">
                                 <button class="btn btn-glass" onclick="showAddCustomerModal()"
                                     title="Tambah Pelanggan Baru"><i class="fas fa-plus"></i> <span
-                                        style="margin-left: 5px;">Tambah Pelanggan</span></button>
+                                        style="margin-left: 5px;">Tambah</span></button>
                             </div>
+                        </div>
+
+                        <div class="form-group" style="margin-top: 1rem;">
+                            <label class="form-label">Pilih Capster (Yang Mengerjakan)</label>
+                            <select class="form-input" id="pos-capster"
+                                style="background: rgba(15,23,42,0.8); color: white;">
+                                <!-- Dynamic Capsters -->
+                            </select>
                         </div>
 
                         <h4 style="margin-top: 2rem;">Pilih Jasa / Produk</h4>
@@ -1060,9 +1120,10 @@
                             <tr>
                                 <th>Tanggal</th>
                                 <th>Nama Pelanggan</th>
+                                <th>Capster</th>
                                 <th>Layanan / Produk</th>
                                 <th>Metode</th>
-                                <th>Status Komisi</th>
+                                <th>Komisi Jasa</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -1070,6 +1131,7 @@
                         </tbody>
                     </table>
                 </div>
+                <div id="pagination-my_customers"></div>
             </div>
         </section>
 
@@ -1098,6 +1160,7 @@
                         </tbody>
                     </table>
                 </div>
+                <div id="pagination-expenses"></div>
             </div>
         </section>
 
@@ -1149,6 +1212,7 @@
                         </tbody>
                     </table>
                 </div>
+                <div id="pagination-customers"></div>
             </div>
         </section>
 
@@ -1182,6 +1246,33 @@
                     </table>
                 </div>
             </div>
+
+            <div class="glass-card" style="margin-top: 2rem;">
+                <h3>Rincian Absensi Capster (Bulan Ini)</h3>
+                <div class="table-container">
+                    <table id="attendance-table">
+                        <thead>
+                            <tr>
+                                <th>Tanggal</th>
+                                <th>Nama Capster</th>
+                                <th>Masuk</th>
+                                <th>Pulang</th>
+                                <th>Status</th>
+                                <th style="text-align:center">Durasi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Dynamic content -->
+                        </tbody>
+                    </table>
+                </div>
+                <div id="pagination-attendance"></div>
+            </div>
+        </section>
+
+        <!-- PAYOUTS VIEW -->
+        <section id="payouts-view" class="view">
+            <!-- Content rendered via renderPayouts() -->
         </section>
 
     </main>
@@ -1232,6 +1323,15 @@
             customers: [],
             settings: { batas_kunjungan_gratis: 5 }
         };
+        let pagination = {
+            expenses: { page: 1, size: 10 },
+            customers: { page: 1, size: 15 },
+            payouts: { page: 1, size: 10 },
+            attendance: { page: 1, size: 15 },
+            my_customers: { page: 1, size: 15 },
+            branches: { page: 1, size: 10 }
+        };
+        let currentMonth = new Date().getFullYear() + '-' + String(new Date().getMonth() + 1).padStart(2, '0');
         let cart = [];
 
         // App Initialization
@@ -1271,6 +1371,7 @@
                         renderDashboard();
                         renderCustomersList();
                         renderPaymentMethodsInPOS();
+                        populateCapsterSelect();
                     }
 
                     // Sembunyikan preloader hanya setelah data siap
@@ -1307,7 +1408,7 @@
                 link.onclick = () => {
                     const viewName = link.getAttribute('data-view');
 
-                    const ownerOnlyViews = ['management', 'branches', 'customers-db', 'staff-data', 'expenses', 'payment-settings'];
+                    const ownerOnlyViews = ['management', 'branches', 'staff-data', 'payment-settings'];
                     if (ownerOnlyViews.includes(viewName) && (!currentUser || currentUser.role !== 'owner')) {
                         return alert('Akses Dibatasi: Hanya Owner yang dapat mengakses menu ini.');
                     }
@@ -1318,21 +1419,75 @@
                     document.getElementById(viewName + '-view').classList.add('active');
                     link.classList.add('active');
 
-                    if (viewName === 'reports') renderPayroll();
+                    if (viewName === 'reports') {
+                        const inputMonth = document.querySelector('#reports-view input[type="month"]');
+                        if (inputMonth) {
+                            inputMonth.onchange = () => renderPayroll();
+                        }
+                        renderPayroll();
+                    }
+                    if (viewName === 'payouts') renderPayouts();
                     if (viewName === 'branches') renderBranches();
-                    if (viewName === 'customers-db') renderCustomersView();
+                    if (viewName === 'customers-db') {
+                        pagination.customers.page = 1;
+                        renderCustomersView();
+                    }
                     if (viewName === 'management') {
                         renderCapsters();
                         renderStaffData();
                     }
-                    if (viewName === 'expenses') renderExpenses();
-                    if (viewName === 'my-customers') renderMyCustomers();
-                    if (viewName === 'attendance') renderAttendance();
+                    if (viewName === 'pos') {
+                        populateCapsterSelect();
+                    }
+                    if (viewName === 'expenses') {
+                        pagination.expenses.page = 1;
+                        renderExpenses();
+                    }
+                    if (viewName === 'my-customers') {
+                        pagination.my_customers.page = 1;
+                        renderMyCustomers();
+                    }
+                    if (viewName === 'attendance') {
+                        pagination.attendance.page = 1;
+                        renderAttendance();
+                    }
                     if (viewName === 'payment-settings') {
                         document.getElementById('payment-methods-input').value = dbData.settings.metode_pembayaran || 'Cash,QRIS';
                     }
                 };
             });
+        }
+
+        function renderPagination(viewKey, totalItems, pageSize, currentPage) {
+            const totalPages = Math.ceil(totalItems / pageSize) || 1;
+            const container = document.getElementById(`pagination-${viewKey}`);
+            if (!container) return;
+
+            container.innerHTML = `
+                <div class="flex-between" style="margin-top: 1rem; padding: 10px; border-top: 1px solid var(--glass-border);">
+                    <div style="font-size: 0.8rem; color: var(--text-dim);">
+                        Menampilkan ${totalItems === 0 ? 0 : Math.min((currentPage - 1) * pageSize + 1, totalItems)} - ${Math.min(currentPage * pageSize, totalItems)} dari ${totalItems} data
+                    </div>
+                    <div style="display: flex; gap: 5px;">
+                        <button class="btn btn-glass" onclick="changePage('${viewKey}', -1)" ${currentPage === 1 ? 'disabled' : ''} style="padding: 4px 10px; font-size: 0.75rem;">
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <span style="padding: 4px 10px; font-size: 0.8rem; font-weight: 600;">Halaman ${currentPage} / ${totalPages}</span>
+                        <button class="btn btn-glass" onclick="changePage('${viewKey}', 1)" ${currentPage === totalPages ? 'disabled' : ''} style="padding: 4px 10px; font-size: 0.75rem;">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function changePage(viewKey, direction) {
+            pagination[viewKey].page += direction;
+            if (viewKey === 'expenses') renderExpenses();
+            if (viewKey === 'customers') renderCustomersView();
+            if (viewKey === 'payouts') renderPayoutsHistory();
+            if (viewKey === 'attendance') renderAttendance();
+            if (viewKey === 'my_customers') renderMyCustomers();
         }
 
         // --- AUTH LOGIC ---
@@ -1376,8 +1531,11 @@
             document.getElementById('login-page').style.display = 'none';
             document.getElementById('user-name').textContent = user.name;
 
+            // Reset semua nav agar terlihat dulu sebelum difilter
+            document.querySelectorAll('.nav-link, .nav-section').forEach(el => el.style.display = 'flex');
+
             if (role !== 'owner') {
-                const restrictedNavs = ['nav-section-op', 'nav-management', 'nav-branches', 'nav-customers', 'nav-reports', 'nav-expenses', 'nav-payment-settings'];
+                const restrictedNavs = ['nav-section-admin', 'nav-reports', 'nav-management', 'nav-branches', 'nav-payment-settings'];
                 restrictedNavs.forEach(id => {
                     const el = document.getElementById(id);
                     if (el) el.style.display = 'none';
@@ -1391,6 +1549,18 @@
 
             renderDashboard();
             renderServices();
+
+            // Atur status dropdown capster di POS berdasarkan Role
+            const posCapsterSelect = document.getElementById('pos-capster');
+            if (posCapsterSelect) {
+                if (role !== 'owner') {
+                    posCapsterSelect.disabled = true;
+                    posCapsterSelect.title = "Otomatis menggunakan akun Anda";
+                } else {
+                    posCapsterSelect.disabled = false;
+                    posCapsterSelect.title = "Pilih personel yang bertugas";
+                }
+            }
         }
 
         function logout() {
@@ -1413,17 +1583,138 @@
             return parseInt(String(val).replace(/[^\d]/g, '')) || 0;
         };
 
+        // --- SWEETALERT HELPERS ---
+        const Toast = Swal.mixin({
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 3000,
+            timerProgressBar: true,
+            background: 'rgba(30, 41, 59, 0.95)',
+            color: '#fff',
+            didOpen: (toast) => {
+                toast.addEventListener('mouseenter', Swal.stopTimer)
+                toast.addEventListener('mouseleave', Swal.resumeTimer)
+            }
+        });
+
+        function showToast(icon, title) {
+            Toast.fire({
+                icon: icon,
+                title: title
+            });
+        }
+
+        let dashboardFilter = { type: 'today', start: '', end: '' };
+
+        function setDashboardPeriod(type, btn) {
+            dashboardFilter.type = type;
+
+            if (btn) {
+                document.querySelectorAll('.dashboards-period-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+            }
+
+            if (type !== 'custom') {
+                document.getElementById('dash-start-date').value = '';
+                document.getElementById('dash-end-date').value = '';
+            } else {
+                document.querySelectorAll('.dashboards-period-btn').forEach(b => b.classList.remove('active'));
+                dashboardFilter.start = document.getElementById('dash-start-date').value;
+                dashboardFilter.end = document.getElementById('dash-end-date').value;
+            }
+
+            renderDashboard();
+        }
+
         function renderDashboard() {
             if (!currentUser) return;
             document.getElementById('user-name').textContent = currentUser.name;
 
-            let trans = dbData.transactions || [];
-            let exps = dbData.expenses || [];
+            const now = new Date();
+            const todayStr = now.toLocaleDateString('en-CA');
 
-            // Filter data sesuai peran (Capster hanya melihat data miliknya/cabangnya)
+            let allTrans = dbData.transactions || [];
+            let allExps = dbData.expenses || [];
+
+            let trans = [];
+            let exps = [];
+            let periodText = "Hari Ini";
+
+            // LOGIKA FILTER TANGGAL
+            if (dashboardFilter.type === 'today') {
+                trans = allTrans.filter(t => String(t.tanggal).startsWith(todayStr));
+                exps = allExps.filter(e => String(e.tanggal).startsWith(todayStr));
+                periodText = "Hari Ini (" + now.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }) + ")";
+            }
+            else if (dashboardFilter.type === 'yesterday') {
+                const yesterday = new Date();
+                yesterday.setDate(now.getDate() - 1);
+                const yesterdayStr = yesterday.toLocaleDateString('en-CA');
+                trans = allTrans.filter(t => String(t.tanggal).startsWith(yesterdayStr));
+                exps = allExps.filter(e => String(e.tanggal).startsWith(yesterdayStr));
+                periodText = "Kemarin (" + yesterday.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }) + ")";
+            }
+            else if (dashboardFilter.type === 'week') {
+                const lastWeek = new Date();
+                lastWeek.setDate(now.getDate() - 7);
+                trans = allTrans.filter(t => new Date(t.tanggal) >= lastWeek);
+                exps = allExps.filter(e => new Date(e.tanggal) >= lastWeek);
+                periodText = "7 Hari Terakhir";
+            }
+            else if (dashboardFilter.type === 'month') {
+                const currentMonth = todayStr.substring(0, 7); // YYYY-MM
+                trans = allTrans.filter(t => String(t.tanggal).startsWith(currentMonth));
+                exps = allExps.filter(e => String(e.tanggal).startsWith(currentMonth));
+                periodText = "Bulan Ini (" + now.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' }) + ")";
+            }
+            else if (dashboardFilter.type === 'year') {
+                const currentYear = todayStr.substring(0, 4); // YYYY
+                trans = allTrans.filter(t => String(t.tanggal).startsWith(currentYear));
+                exps = allExps.filter(e => String(e.tanggal).startsWith(currentYear));
+                periodText = "Tahun Ini (" + currentYear + ")";
+            }
+            else if (dashboardFilter.type === 'custom') {
+                const start = dashboardFilter.start;
+                const end = dashboardFilter.end;
+
+                if (start && !end) {
+                    // Single Date selection
+                    trans = allTrans.filter(t => String(t.tanggal).startsWith(start));
+                    exps = allExps.filter(e => String(e.tanggal).startsWith(start));
+                    periodText = "Tanggal: " + new Date(start).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+                }
+                else if (!start && end) {
+                    // Single Date selection (if filled only second box)
+                    trans = allTrans.filter(t => String(t.tanggal).startsWith(end));
+                    exps = allExps.filter(e => String(e.tanggal).startsWith(end));
+                    periodText = "Tanggal: " + new Date(end).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+                }
+                else if (start && end) {
+                    // Range Date selection
+                    trans = allTrans.filter(t => {
+                        const d = String(t.tanggal).split(' ')[0];
+                        return d >= start && d <= end;
+                    });
+                    exps = allExps.filter(e => {
+                        const d = String(e.tanggal).split(' ')[0];
+                        return d >= start && d <= end;
+                    });
+                    periodText = "Rentang: " + new Date(start).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }) + " - " + new Date(end).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+                } else {
+                    // Fallback to today
+                    trans = allTrans.filter(t => String(t.tanggal).startsWith(todayStr));
+                    exps = allExps.filter(e => String(e.tanggal).startsWith(todayStr));
+                }
+            }
+
+            // Update sub-header text
+            const subHeaderText = document.querySelector('#dashboard-view p');
+            if (subHeaderText) subHeaderText.textContent = "Ringkasan performa " + periodText;
+
+            // Filter data sesuai peran (Owner vs Cabang)
             if (currentUser.role !== 'owner') {
                 trans = trans.filter(t => String(t.capster_id) === String(currentUser.id));
-                // Pengeluaran biasanya per cabang
                 exps = exps.filter(e => String(e.cabang_id) === String(currentUser.cabang_id));
             }
 
@@ -1431,10 +1722,50 @@
             const totalCash = trans.filter(t => (t.metode_bayar || t.payment_method) === 'Cash').reduce((sum, t) => sum + parseMoney(t.total), 0);
             const totalQRIS = trans.filter(t => (t.metode_bayar || t.payment_method) === 'QRIS').reduce((sum, t) => sum + parseMoney(t.total), 0);
 
-            const totalPayout = trans.reduce((sum, t) => sum + parseMoney(t.komisi_capster || t.capster_comm), 0);
-            const totalMeal = trans.reduce((sum, t) => sum + parseMoney(t.uang_makan || t.meal_allowance), 0);
+            // Hitung Bagi Hasil / Komisi secara dinamis (Hanya dari Jasa)
+            const totalPayout = trans.reduce((sum, t) => {
+                const c = dbData.capsters.find(it => String(it.id) === String(t.capster_id));
+                const rate = c ? (parseFloat(String(c.persen_komisi).replace(/[^\d.]/g, '')) || 0) : 0;
 
-            const totalNet = trans.reduce((sum, t) => sum + parseMoney(t.setoran_owner || t.net_to_owner), 0);
+                let items = [];
+                try { items = typeof t.item_json === 'string' ? JSON.parse(t.item_json) : (t.item_json || []); } catch (e) { }
+                const jasaOnly = items.reduce((s, it) => s + (it.kategori === 'Jasa' ? parseMoney(it.harga) : 0), 0);
+
+                return sum + (jasaOnly * (rate / 100));
+            }, 0);
+
+            // Hitung Uang Makan Otomatis (Harian per Capster aktif)
+            // Biarpun ada pelanggan atau tidak, uang makan tetap dihitung (Overhead harian)
+            let daysCount = 1;
+            if (dashboardFilter.type === 'today' || dashboardFilter.type === 'yesterday') {
+                daysCount = 1;
+            } else if (dashboardFilter.type === 'week') {
+                daysCount = 7;
+            } else if (dashboardFilter.type === 'month') {
+                daysCount = now.getDate(); // Sampai hari ini di bulan ini
+            } else if (dashboardFilter.type === 'year') {
+                // Hitung jumlah hari yang sudah dilalui tahun ini
+                const startOfYear = new Date(now.getFullYear(), 0, 1);
+                const diff = now - startOfYear;
+                daysCount = Math.floor(diff / (1000 * 60 * 60 * 24)) + 1;
+            } else if (dashboardFilter.type === 'custom' && dashboardFilter.start && dashboardFilter.end) {
+                const s = new Date(dashboardFilter.start);
+                const e = new Date(dashboardFilter.end);
+                const limitEnd = e > now ? now : e;
+                const diffTime = Math.max(0, limitEnd - s);
+                daysCount = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+            }
+
+            const relevantCapsters = dbData.capsters.filter(c => {
+                const isActive = (c.status || 'Aktif') === 'Aktif';
+                if (!isActive) return false;
+                if (currentUser.role === 'owner') return true;
+                return String(c.id) === String(currentUser.id);
+            });
+
+            const totalMeal = relevantCapsters.reduce((sum, c) => sum + parseMoney(c.uang_makan), 0) * daysCount;
+
+            const totalNet = totalRevenue - totalPayout - totalMeal;
             const totalExp = exps.reduce((sum, e) => sum + parseMoney(e.jumlah || e.total), 0);
 
             // Hitung pelanggan unik dari transaksi
@@ -1450,20 +1781,33 @@
             document.getElementById('stat-net').innerHTML = formatStat(totalNet);
             document.getElementById('stat-expenses').innerHTML = formatStat(totalExp);
             document.getElementById('stat-customers').textContent = uniqueCusts;
-            document.getElementById('stat-services').textContent = dbData.services ? dbData.services.length : 0;
+            document.getElementById('stat-services').textContent = trans.length; // Menampilkan total jasa dalam periode tersebut
 
-            // Init Chart (Data dari 7 hari terakhir)
+            // Init Chart (Data dari 7 hari terakhir selalu)
             const ctx = document.getElementById('revenueChart').getContext('2d');
             if (window.myChart) window.myChart.destroy();
 
-            // Dummy chart labels tapi data omset bisa diambil dari total jika ingin lebih kompleks
+            // Sempurnakan Chart dengan data aktual jika filter adalah harian atau mingguan
+            const last7Days = [];
+            const revenueData = [];
+            for (let i = 6; i >= 0; i--) {
+                const d = new Date();
+                d.setDate(d.getDate() - i);
+                const dStr = d.toLocaleDateString('en-CA');
+                last7Days.push(d.toLocaleDateString('id-ID', { weekday: 'short' }));
+
+                const dayRevenue = allTrans.filter(t => String(t.tanggal).startsWith(dStr))
+                    .reduce((sum, t) => sum + parseMoney(t.total), 0);
+                revenueData.push(dayRevenue / 1000000); // Dalam Juta
+            }
+
             window.myChart = new Chart(ctx, {
                 type: 'line',
                 data: {
-                    labels: ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'],
+                    labels: last7Days,
                     datasets: [{
                         label: 'Pendapatan (Juta)',
-                        data: [1.2, 1.9, 1.5, 2.5, 3.2, 4.5, totalRevenue / 1000000],
+                        data: revenueData,
                         borderColor: '#6366f1',
                         backgroundColor: 'rgba(99, 102, 241, 0.1)',
                         fill: true,
@@ -1473,9 +1817,59 @@
                 options: {
                     responsive: true,
                     plugins: { legend: { display: false } },
-                    scales: { y: { grid: { color: 'rgba(255,255,255,0.05)' } } }
+                    scales: {
+                        y: {
+                            grid: { color: 'rgba(255,255,255,0.05)' },
+                            ticks: { color: 'rgba(255,255,255,0.5)', font: { size: 10 } }
+                        },
+                        x: {
+                            ticks: { color: 'rgba(255,255,255,0.5)', font: { size: 10 } }
+                        }
+                    }
                 }
             });
+
+            // Update Top Capsters based on filter
+            renderTopCapsters(trans);
+        }
+
+        function renderTopCapsters(currentTransData) {
+            const container = document.getElementById('top-capsters-list');
+            if (!container) return;
+
+            const stats = {};
+            currentTransData.forEach(t => {
+                if (!stats[t.capster_id]) stats[t.capster_id] = 0;
+                stats[t.capster_id] += parseMoney(t.total);
+            });
+
+            const topArr = Object.entries(stats)
+                .map(([id, rev]) => ({ id, revenue: rev }))
+                .sort((a, b) => b.revenue - a.revenue)
+                .slice(0, 5);
+
+            if (topArr.length === 0) {
+                container.innerHTML = '<p style="text-align:center; color:var(--text-dim); padding: 10px;">Belum ada data.</p>';
+                return;
+            }
+
+            container.innerHTML = topArr.map(item => {
+                const staff = dbData.capsters.find(s => String(s.id) === String(item.id));
+                return `
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px; padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <div style="width: 32px; height: 32px; border-radius: 50%; background: var(--glass); display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight:700;">${staff ? staff.nama[0] : '?'}</div>
+                            <div>
+                                <div style="font-size: 0.9rem; font-weight: 500;">${staff ? staff.nama : 'Unknown'}</div>
+                                <div style="font-size: 0.75rem; color: var(--text-dim);">Capster</div>
+                            </div>
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="font-size: 0.9rem; font-weight: 600; color: var(--secondary);">Rp ${item.revenue.toLocaleString()}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
         }
 
         function renderServices() {
@@ -1544,6 +1938,502 @@
             renderCart();
         }
 
+        // --- PAYOUT / SETORAN LOGIC ---
+        function renderPayouts() {
+            const container = document.getElementById('payouts-view');
+            if (!container) return;
+
+            const isOwner = currentUser && currentUser.role === 'owner';
+            let setupBtn = '';
+            if (isOwner) {
+                setupBtn = `<button class="btn btn-glass" onclick="triggerPayoutSetup()" style="font-size: 0.75rem; color: var(--accent);"><i class="fas fa-tools"></i> MIGRASI SHEET SETORAN</button>`;
+            }
+
+            let branchSelect = `
+                <select id="payout-branch-filter" class="form-input" style="width: auto;" onchange="renderPayoutsList()">
+                    <option value="all">Semua Cabang</option>
+                    ${dbData.branches.map(b => `<option value="${b.id}">${b.nama}</option>`).join('')}
+                </select>
+            `;
+
+            if (!isOwner) {
+                const myBranch = dbData.branches.find(b => String(b.id) === String(currentUser.cabang_id));
+                branchSelect = `
+                    <select id="payout-branch-filter" class="form-input" style="width: auto;" disabled>
+                        <option value="${currentUser.cabang_id}">${myBranch ? myBranch.nama : 'Cabang Anda'}</option>
+                    </select>
+                `;
+            }
+
+            container.innerHTML = `
+                <div class="flex-between" style="margin-bottom: 2rem;">
+                    <div>
+                        <h1 class="text-gradient">${isOwner ? 'Setoran Owner' : 'Laporan Setoran Cabang'}</h1>
+                        <p style="color: var(--text-dim)">${isOwner ? 'Tarik laporan setoran bersih dari cabang.' : 'Laporkan setoran bersih harian ke owner.'}</p>
+                    </div>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        ${setupBtn}
+                        ${branchSelect}
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 2fr 1.2fr; gap: 1.5rem;">
+                    <div>
+                        <div class="glass-card" style="margin-bottom: 1.5rem;">
+                            <div class="flex-between" style="margin-bottom: 1.5rem;">
+                                <h3 style="margin-bottom: 0;">Belum Setor (Antrean)</h3>
+                                <div style="font-size: 0.85rem; color: var(--text-dim);">
+                                    <input type="checkbox" id="check-all-payouts" onclick="toggleAllPayouts(this)"> <label for="check-all-payouts">Pilih Semua</label>
+                                </div>
+                            </div>
+                            <div class="table-container">
+                                <table id="payouts-pending-table">
+                                    <thead>
+                                        <tr>
+                                            <th style="width:30px"></th>
+                                            <th>Tanggal</th>
+                                            <th>Cabang</th>
+                                            <th style="text-align:right">Omset</th>
+                                            <th style="text-align:right">Potongan</th>
+                                            <th style="text-align:right">Net Owner</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <!-- Dynamic -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Riwayat Setoran Section -->
+                        <div class="glass-card">
+                            <h3 style="margin-bottom: 1.5rem;">Riwayat Setoran (Tersimpan)</h3>
+                            <div class="table-container">
+                                <table id="payouts-history-table">
+                                    <thead>
+                                        <tr>
+                                            <th>ID & Waktu</th>
+                                            <th>Cabang</th>
+                                            <th style="text-align:right">Omset</th>
+                                            <th style="text-align:right">Net Setor</th>
+                                            <th style="text-align:center">Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <!-- Dynamic -->
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div id="pagination-payouts"></div>
+                        </div>
+                    </div>
+
+                    <div class="glass-card" style="height: fit-content; position: sticky; top: 2rem;">
+                        <h3 style="margin-bottom: 1.5rem; border-bottom: 1px solid var(--glass-border); padding-bottom: 10px;">Ringkasan Setoran</h3>
+                        <div style="margin-bottom: 1.5rem;">
+                            <!-- OMSET SECTION -->
+                            <div class="flex-between" style="margin-bottom: 8px;">
+                                <span style="color: var(--text-dim); font-size: 0.85rem;">Omset Tunai (Cash):</span>
+                                <span id="payout-sum-cash-raw" style="font-weight:500;">Rp 0</span>
+                            </div>
+                            <div class="flex-between" style="margin-bottom: 12px;">
+                                <span style="color: var(--text-dim); font-size: 0.85rem;">Omset Non-Tunai (QRIS):</span>
+                                <span id="payout-sum-qris-raw" style="font-weight:500;">Rp 0</span>
+                            </div>
+                            <div class="flex-between" style="margin-bottom: 12px; padding-top: 8px; border-top: 1px dashed var(--glass-border);">
+                                <span style="font-weight: 600; color: var(--text-main)">Total Omset Kotor:</span>
+                                <span id="payout-sum-jasa" style="font-weight:700">Rp 0</span>
+                            </div>
+
+                            <!-- DEDUCTION SECTION -->
+                            <div style="margin-top: 15px; padding: 10px; background: rgba(239, 68, 68, 0.05); border-radius: 8px;">
+                                <div class="flex-between" style="margin-bottom: 8px;">
+                                    <span style="color: var(--danger); font-size: 0.85rem;">Komisi Capster:</span>
+                                    <span id="payout-sum-comm" style="color: var(--danger); font-weight:600">- Rp 0</span>
+                                </div>
+                                <div class="flex-between">
+                                    <span style="color: var(--danger); font-size: 0.85rem;">Uang Makan:</span>
+                                    <span id="payout-sum-meal" style="color: var(--danger); font-weight:600">- Rp 0</span>
+                                </div>
+                            </div>
+
+                            <hr style="border: 0.5px solid var(--glass-border); margin: 15px 0;">
+                            
+                            <div class="flex-between" style="margin-bottom: 8px;">
+                                <span style="color: var(--text-dim); font-size: 0.85rem;">Sisa Tunai di Toko:</span>
+                                <span id="payout-sum-cash-net" style="font-weight:600; color: var(--accent);">Rp 0</span>
+                            </div>
+
+                            <div class="flex-between">
+                                <span style="font-weight: 800; color:var(--text-main)">SIAP SETOR (NET):</span>
+                                <span id="payout-sum-net" style="font-weight: 800; color: var(--success); font-size: 1.4rem;">Rp 0</span>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Catatan</label>
+                            <textarea id="payout-note" class="form-input" rows="2" placeholder="Catatan opsional..."></textarea>
+                        </div>
+
+                        <button class="btn btn-primary" style="width: 100%; height: 50px;" onclick="processPayout()">
+                            SIMPAN SETORAN <i class="fas fa-save"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            renderPayoutsList();
+        }
+
+        async function triggerPayoutSetup() {
+            Swal.fire({
+                title: 'Migrasi Sheet?',
+                text: 'Sistem akan membuat sheet "setoran" tanpa menghapus data lain.',
+                icon: 'info',
+                showCancelButton: true,
+                confirmButtonText: 'Ya, Jalankan'
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    try {
+                        const response = await fetch(APP_URL, {
+                            method: 'POST',
+                            body: JSON.stringify({ action: 'setup_setoran' })
+                        });
+                        const res = await response.json();
+                        showToast('success', 'Migrasi Berhasil!');
+                        fetchDataFromGAS();
+                    } catch (e) {
+                        showToast('error', 'Gagal: ' + e.message);
+                    }
+                }
+            });
+        }
+
+        function renderPayoutsList() {
+            const tbody = document.querySelector('#payouts-pending-table tbody');
+            if (!tbody) return;
+
+            const now = new Date();
+            const todayStr = now.toLocaleDateString('en-CA');
+
+            const branchId = document.getElementById('payout-branch-filter').value;
+            let pendingTrans = (dbData.transactions || []).filter(t => t.status_setoran !== 'Sudah Setor');
+            if (branchId !== 'all') pendingTrans = pendingTrans.filter(t => String(t.cabang_id) === String(branchId));
+
+            // Group by Date & Branch
+            const grouped = {};
+            pendingTrans.forEach(t => {
+                const date = String(t.tanggal).substring(0, 10);
+                const key = date + '_' + t.cabang_id;
+                if (!grouped[key]) {
+                    // Hitung Uang Makan Harian (Overhead) untuk hari tersebut
+                    const branchCapsters = dbData.capsters.filter(c => String(c.cabang_id) === String(t.cabang_id) && (c.status || 'Aktif') === 'Aktif');
+                    const dailyMeal = branchCapsters.reduce((sum, c) => sum + parseMoney(c.uang_makan), 0);
+
+                    grouped[key] = {
+                        date: date,
+                        branch_id: t.cabang_id,
+                        omset: 0,
+                        comm: 0,
+                        meal: dailyMeal,
+                        cash: -dailyMeal,
+                        qris: 0,
+                        transaction_ids: []
+                    };
+                }
+                const rev = parseMoney(t.total);
+                const com = parseMoney(t.komisi_capster);
+                const method = (t.metode_bayar || t.payment_method || 'Cash');
+
+                grouped[key].omset += rev;
+                grouped[key].comm += com;
+                grouped[key].transaction_ids.push(t.id);
+
+                // Net per transaksi (Omset - Komisi) ditambahkan ke distribusi Cash/QRIS
+                const netTx = rev - com;
+                if (method === 'QRIS') grouped[key].qris += netTx;
+                else grouped[key].cash += netTx;
+            });
+
+            // INJEKSI HARI INI: Jika belum ada transaksi, tampilkan agar owner tahu biaya uang makan hari ini
+            const branchesToInject = branchId === 'all' ? dbData.branches : dbData.branches.filter(b => String(b.id) === String(branchId));
+            branchesToInject.forEach(b => {
+                const key = todayStr + '_' + b.id;
+                if (!grouped[key]) {
+                    // Hanya injeksi jika hari ini memeng BELUM pernah disetor sama sekali (payouts)
+                    const alreadyPaidToday = (dbData.payouts || []).some(p => String(p.tanggal).startsWith(todayStr) && String(p.cabang_id) === String(b.id));
+
+                    if (!alreadyPaidToday) {
+                        const branchCapsters = dbData.capsters.filter(c => String(c.cabang_id) === String(b.id) && (c.status || 'Aktif') === 'Aktif');
+                        const dailyMeal = branchCapsters.reduce((sum, c) => sum + parseMoney(c.uang_makan), 0);
+
+                        grouped[key] = {
+                            date: todayStr,
+                            branch_id: b.id,
+                            omset: 0,
+                            comm: 0,
+                            meal: dailyMeal,
+                            cash: -dailyMeal,
+                            qris: 0,
+                            transaction_ids: []
+                        };
+                    }
+                }
+            });
+
+            const sortedKeys = Object.keys(grouped).sort().reverse();
+
+            if (sortedKeys.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 40px; color: var(--text-dim);">Semua laporan sudah disetor.</td></tr>';
+                updatePayoutSummary();
+                return;
+            }
+
+            tbody.innerHTML = sortedKeys.map(key => {
+                const g = grouped[key];
+                const b = dbData.branches.find(br => String(br.id) === String(g.branch_id));
+                const net = g.omset - g.comm - g.meal;
+
+                return `
+                    <tr>
+                        <td>
+                            <input type="checkbox" class="payout-check" 
+                                value="${g.transaction_ids.join(',')}" 
+                                data-jasa="${g.omset}" 
+                                data-comm="${g.comm}" 
+                                data-meal="${g.meal}" 
+                                data-cash="${g.cash}"
+                                data-qris="${g.qris}"
+                                onchange="updatePayoutSummary()">
+                        </td>
+                        <td>${g.date === todayStr ? '<b>Hari Ini</b>' : g.date}</td>
+                        <td>${b ? b.nama : 'Unknown'}</td>
+                        <td style="text-align:right">Rp ${g.omset.toLocaleString()}</td>
+                        <td style="text-align:right; color: var(--danger)">- Rp ${(g.comm + g.meal).toLocaleString()}</td>
+                        <td style="text-align:right"><strong style="color:${net >= 0 ? 'var(--success)' : 'var(--danger)'}">Rp ${net.toLocaleString()}</strong></td>
+                    </tr>
+                `;
+            }).join('');
+            updatePayoutSummary();
+            renderPayoutsHistory();
+        }
+
+        function renderPayoutsHistory() {
+            const tbody = document.querySelector('#payouts-history-table tbody');
+            if (!tbody) return;
+
+            const branchId = document.getElementById('payout-branch-filter').value;
+            let hist = (dbData.payouts || []);
+            if (branchId !== 'all') hist = hist.filter(h => String(h.cabang_id) === String(branchId));
+
+            if (hist.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 20px; color: var(--text-dim);">Belum ada riwayat setoran.</td></tr>';
+                document.getElementById('pagination-payouts').innerHTML = '';
+                return;
+            }
+
+            // Sort by latest
+            hist.sort((a, b) => new Date(b.tanggal) - new Date(a.tanggal));
+
+            const total = hist.length;
+            const p = pagination.payouts;
+            const start = (p.page - 1) * p.size;
+            const paginated = hist.slice(start, start + p.size);
+
+            tbody.innerHTML = paginated.map(h => {
+                const b = dbData.branches.find(br => String(br.id) === String(h.cabang_id));
+                const net = parseMoney(h.setoran_bersih);
+                const omset = parseMoney(h.total_jasa);
+
+                return `
+                    <tr style="font-size: 0.85rem;">
+                        <td>
+                            <div style="font-weight:600">${h.id}</div>
+                            <div style="font-size:0.75rem; color: var(--text-dim)">${String(h.tanggal).substring(0, 16).replace('T', ' ')}</div>
+                        </td>
+                        <td>${b ? b.nama : 'Unknown'}</td>
+                        <td style="text-align:right">Rp ${omset.toLocaleString()}</td>
+                        <td style="text-align:right"><strong style="color: var(--success)">Rp ${net.toLocaleString()}</strong></td>
+                        <td style="text-align:center">
+                             <button class="btn" style="padding: 4px 8px; font-size: 0.75rem; background: var(--glass);" 
+                                onclick="showPayoutDetail('${h.id}')" title="Detail">
+                                <i class="fas fa-eye"></i>
+                             </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            renderPagination('payouts', total, p.size, p.page);
+        }
+
+        function showPayoutDetail(id) {
+            const p = dbData.payouts.find(it => String(it.id) === String(id));
+            if (!p) return;
+
+            const b = dbData.branches.find(br => String(br.id) === String(p.cabang_id));
+            const html = `
+                <div style="text-align: left; font-size: 0.9rem;">
+                    <div style="margin-bottom: 20px; padding: 10px; background: var(--glass); border-radius: 8px;">
+                        <p><b>Waktu:</b> ${p.tanggal}</p>
+                        <p><b>Cabang:</b> ${b ? b.nama : '-'}</p>
+                        <p><b>Catatan:</b> ${p.catatan || '-'}</p>
+                    </div>
+                    
+                    <div class="flex-between" style="margin-bottom: 8px;">
+                        <span>Total Omset Kotor:</span>
+                        <span>Rp ${parseMoney(p.total_jasa).toLocaleString()}</span>
+                    </div>
+                    <div class="flex-between" style="margin-bottom: 8px; color: var(--danger)">
+                        <span>Komisi Capster:</span>
+                        <span>- Rp ${parseMoney(p.total_komisi).toLocaleString()}</span>
+                    </div>
+                    <div class="flex-between" style="margin-bottom: 12px; color: var(--danger)">
+                        <span>Uang Makan:</span>
+                        <span>- Rp ${parseMoney(p.total_uang_makan).toLocaleString()}</span>
+                    </div>
+                    <hr style="border: 0.5px solid var(--glass-border); margin: 10px 0;">
+                    <div class="flex-between" style="font-weight: 800; font-size: 1.1rem; color: var(--success)">
+                        <span>SETORAN BERSIH:</span>
+                        <span>Rp ${parseMoney(p.setoran_bersih).toLocaleString()}</span>
+                    </div>
+                </div>
+            `;
+
+            Swal.fire({
+                title: 'Rincian Setoran ' + p.id,
+                html: html,
+                confirmButtonColor: 'var(--primary)',
+                width: '450px'
+            });
+        }
+
+        function toggleAllPayouts(el) {
+            document.querySelectorAll('.payout-check').forEach(cb => cb.checked = el.checked);
+            updatePayoutSummary();
+        }
+
+        function updatePayoutSummary() {
+            const checks = document.querySelectorAll('.payout-check:checked');
+            let rawCash = 0, rawQris = 0;
+            let totalComm = 0, totalMeal = 0;
+
+            checks.forEach(cb => {
+                totalComm += parseMoney(cb.getAttribute('data-comm'));
+                totalMeal += parseMoney(cb.getAttribute('data-meal'));
+
+                // Omset kotor dipisah per baris (yang sudah dihitung di render list)
+                // Di renderPayoutsList, data-cash dan data-qris saat ini menyimpan NET (setelah potong komisi per tx)
+                // Mari kita sesuaikan agar data-cash/qris di checkbox adalah OMSET KOTOR (jasa)
+                // Namun untuk konsistensi dengan logic sebelumnya, kita ambil omset kotor aslinya
+                // Saya akan mengandalkan atribut baru yang lebih eksplisit
+            });
+
+            // Re-calculate more accurately from the source to avoid Net vs Gross confusion
+            let totalJasa = 0;
+            checks.forEach(cb => {
+                totalJasa += parseMoney(cb.getAttribute('data-jasa'));
+            });
+
+            // Hitung distribusi Omset Kotor (sebelum potong)
+            // Karena data-cash dan data-qris di checkbox (dari grouped logic sebelumnya) adalah NET OWNER, 
+            // Kita hitung ulang berdasarkan rincian metode bayar
+            let omsetCash = 0, omsetQris = 0;
+
+            // Ambil semua transaksi IDs dari checkbox yang dicentang
+            let allTxIds = [];
+            checks.forEach(cb => {
+                if (cb.value) allTxIds = allTxIds.concat(cb.value.split(','));
+            });
+
+            allTxIds.forEach(id => {
+                const t = dbData.transactions.find(tx => String(tx.id) === String(id));
+                if (t) {
+                    const rev = parseMoney(t.total);
+                    const method = (t.metode_bayar || t.payment_method || 'Cash');
+                    if (method === 'QRIS') omsetQris += rev;
+                    else omsetCash += rev;
+                }
+            });
+
+            const netOwner = totalJasa - totalComm - totalMeal;
+            const cashInStore = omsetCash - totalComm - totalMeal; // Sisa uang fisik di laci
+
+            document.getElementById('payout-sum-cash-raw').textContent = 'Rp ' + omsetCash.toLocaleString();
+            document.getElementById('payout-sum-qris-raw').textContent = 'Rp ' + omsetQris.toLocaleString();
+            document.getElementById('payout-sum-jasa').textContent = 'Rp ' + totalJasa.toLocaleString();
+
+            document.getElementById('payout-sum-comm').textContent = '- Rp ' + totalComm.toLocaleString();
+            document.getElementById('payout-sum-meal').textContent = '- Rp ' + totalMeal.toLocaleString();
+
+            document.getElementById('payout-sum-cash-net').textContent = 'Rp ' + cashInStore.toLocaleString();
+            document.getElementById('payout-sum-net').textContent = 'Rp ' + netOwner.toLocaleString();
+        }
+
+        async function processPayout() {
+            const checks = document.querySelectorAll('.payout-check:checked');
+            if (checks.length === 0) return showToast('warning', 'Pilih transaksi/hari dulu!');
+            const net = parseMoney(document.getElementById('payout-sum-net').textContent);
+
+            Swal.fire({
+                title: 'Konfirmasi Setoran',
+                html: `Anda akan menyimpan setoran sebesar <br><b style="font-size: 1.5rem; color: var(--success)">Rp ${net.toLocaleString()}</b>`,
+                icon: 'question',
+                showCancelButton: true
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    try {
+                        let allIds = [];
+                        checks.forEach(cb => {
+                            if (cb.value) allIds = allIds.concat(cb.value.split(','));
+                        });
+
+                        const payload = {
+                            action: 'save_setoran',
+                            branch_id: document.getElementById('payout-branch-filter').value,
+                            total_jasa: parseMoney(document.getElementById('payout-sum-jasa').textContent),
+                            total_komisi: parseMoney(document.getElementById('payout-sum-comm').textContent),
+                            total_uang_makan: parseMoney(document.getElementById('payout-sum-meal').textContent),
+                            setoran_bersih: net,
+                            total_cash: parseMoney(document.getElementById('payout-sum-cash-raw').textContent),
+                            total_qris: parseMoney(document.getElementById('payout-sum-qris-raw').textContent),
+                            transaksi_ids: allIds,
+                            catatan: document.getElementById('payout-note').value
+                        };
+                        const r = await fetch(APP_URL, { method: 'POST', body: JSON.stringify(payload) });
+                        const res = await r.json();
+
+                        if (res.status === 'success') {
+                            // OPTIMISTIC LOCAL UPDATE: Agar langsung 'clear' dari UI
+                            // 1. Update status transaksi di memori lokal
+                            const stringIds = allIds.map(id => String(id));
+                            dbData.transactions.forEach(t => {
+                                if (stringIds.includes(String(t.id))) {
+                                    t.status_setoran = 'Sudah Setor';
+                                }
+                            });
+
+                            // 2. Tambah record setoran di memori lokal agar baris 'Hari Ini' juga hilang jika disetor
+                            if (!dbData.payouts) dbData.payouts = [];
+                            dbData.payouts.push({
+                                tanggal: new Date().toISOString(),
+                                cabang_id: payload.branch_id
+                            });
+
+                            // 3. Reset Catatan & Refresh UI
+                            document.getElementById('payout-note').value = '';
+                            renderPayoutsList();
+
+                            Swal.fire('Berhasil!', 'Setoran telah disimpan dan data diperbarui.', 'success');
+
+                            // Tetap sinkronkan background untuk kepastian data terbaru
+                            setTimeout(() => fetchDataFromGAS(), 2000);
+                        }
+                    } catch (e) { showToast('error', 'Gagal.'); }
+                }
+            });
+        }
+
         function renderCapsters() {
             const tbody = document.querySelector('#capsters-table tbody');
             if (!tbody) return;
@@ -1580,6 +2470,7 @@
             document.getElementById('sub-view-' + targetId).style.display = 'block';
         }
 
+
         function renderCustomersList() {
             const posCustomerInput = document.getElementById('pos-customer');
             if (!posCustomerInput) return;
@@ -1607,10 +2498,17 @@
             const tbody = document.querySelector('#payroll-table tbody');
             if (!tbody) return;
 
-            // Filter capsters based on role
-            let displayData = dbData.capsters;
+            // Pastikan format Bulan (YYYY-MM)
+            const inputMonth = document.querySelector('#reports-view input[type="month"]');
+            if (inputMonth && inputMonth.value) {
+                currentMonth = inputMonth.value;
+            } else if (inputMonth) {
+                inputMonth.value = currentMonth;
+            }
+
+            let displayData = dbData.capsters || [];
             if (currentUser.role !== 'owner') {
-                displayData = dbData.capsters.filter(c => String(c.id) === String(currentUser.id));
+                displayData = displayData.filter(c => String(c.id) === String(currentUser.id));
             }
 
             if (displayData.length === 0) {
@@ -1618,13 +2516,37 @@
                 return;
             }
 
+            const now = new Date();
+            const realTodayMonth = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+
             tbody.innerHTML = displayData.map(c => {
                 const base = parseInt(c.gaji_pokok || 0);
-                const meal = parseInt(c.uang_makan || 0) * 26;
 
-                // Hitung komisi asli dari transaksi
-                const capsterTrans = (dbData.transactions || []).filter(t => String(t.capster_id) === String(c.id));
-                const actualComm = capsterTrans.reduce((sum, t) => sum + (parseInt(t.komisi_capster || t.capster_comm) || 0), 0);
+                // Hitung Uang Makan Otomatis
+                let daysInPeriod = 0;
+                const [y, m] = currentMonth.split('-').map(Number);
+                if (currentMonth === realTodayMonth) {
+                    daysInPeriod = now.getDate();
+                } else {
+                    daysInPeriod = new Date(y, m, 0).getDate();
+                }
+                const meal = parseInt(c.uang_makan || 0) * daysInPeriod;
+
+                const capsterTrans = (dbData.transactions || []).filter(t => {
+                    const tDate = String(t.tanggal || t.Tanggal || '');
+                    const tId = String(t.capster_id || '').trim();
+                    const capId = String(c.id).trim();
+                    return (tId === capId) && tDate.startsWith(currentMonth);
+                });
+
+                const rate = parseFloat(String(c.persen_komisi || 0).replace(/[^0-9.]/g, '')) || 0;
+
+                const actualComm = capsterTrans.reduce((sum, t) => {
+                    let items = [];
+                    try { items = typeof t.item_json === 'string' ? JSON.parse(t.item_json) : (t.item_json || []); } catch (e) { }
+                    const jasaOnly = items.reduce((s, it) => s + (it.kategori === 'Jasa' ? parseMoney(it.harga) : 0), 0);
+                    return sum + (jasaOnly * (rate / 100));
+                }, 0);
 
                 const total = base + meal + actualComm;
                 return `
@@ -1643,14 +2565,14 @@
         async function submitTransaction() {
             const customerInput = document.getElementById('pos-customer').value.trim();
             if (!customerInput) {
-                return alert('⚠️ Wajib input pelanggan! Mohon pilih dari daftar atau ketik nama pelanggan.');
+                return showToast('warning', 'Wajib input pelanggan!');
             }
 
-            if (cart.length === 0) return alert('Pilih jasa dulu!');
+            if (cart.length === 0) return showToast('info', 'Pilih jasa dulu!');
 
             const paymentMethod = document.getElementById('selected-payment-method').value;
             if (!paymentMethod) {
-                return alert('⚠️ Wajib memilih metode pembayaran (Cash/QRIS)!');
+                return showToast('warning', 'Wajib memilih metode pembayaran!');
             }
 
             const btn = document.querySelector('button[onclick="submitTransaction()"]');
@@ -1660,33 +2582,50 @@
 
             const total = cart.reduce((sum, item) => sum + parseMoney(item.harga), 0);
 
-            // ... ID lookup ...
+            // ID lookup (Peningkatan Akurasi: Prioritaskan Nama (WA) Persis)
             let selectedCustomerId = null;
             if (customerInput) {
-                const match = customerInput.match(/\((.*?)\)/);
-                const waFromInput = match ? match[1] : customerInput;
-                const customerObj = dbData.customers.find(c =>
-                    String(c.whatsapp) === String(waFromInput) ||
-                    String(c.nama) === String(customerInput) ||
-                    `${c.nama} (${c.whatsapp})` === customerInput
+                const searchStr = customerInput.toLowerCase().trim();
+                const matchWA = customerInput.match(/\((.*?)\)/);
+                const waFromInput = matchWA ? matchWA[1].trim() : null;
+
+                // 1. Cari yang Persis Format "Nama (WA)" agar tidak tertukar
+                let customerObj = dbData.customers.find(c =>
+                    `${c.nama} (${c.whatsapp})`.toLowerCase().trim() === searchStr
                 );
+
+                // 2. Fallback ke WhatsApp saja
+                if (!customerObj && waFromInput) {
+                    customerObj = dbData.customers.find(c => String(c.whatsapp).trim() === waFromInput);
+                }
+
+                // 3. Fallback ke Nama saja (Hati-hati jika ada nama sama)
+                if (!customerObj) {
+                    customerObj = dbData.customers.find(c => String(c.nama).toLowerCase().trim() === searchStr);
+                }
+
                 if (customerObj) selectedCustomerId = customerObj.id;
             }
 
-            const commPercent = parseMoney(currentUser.persen_komisi) || 20;
-            const commValue = total * (commPercent / 100);
+            const selectedCapsterId = document.getElementById('pos-capster').value;
+            const staffInfo = dbData.capsters.find(c => String(c.id) === String(selectedCapsterId));
+            const jasaTotal = cart.reduce((sum, item) => sum + (item.kategori === 'Jasa' ? parseMoney(item.harga) : 0), 0);
 
-            const today = new Date().toISOString().split('T')[0];
+            const commPercent = staffInfo ? (parseFloat(String(staffInfo.persen_komisi).replace(/[^\d.]/g, '')) || 0) : 0;
+            const commValue = jasaTotal * (commPercent / 100);
+
+            // Cek Uang Makan Hari Ini (LOKAL)
+            const todayStr = new Date().toLocaleDateString('en-CA');
             const hasTransToday = (dbData.transactions || []).some(t =>
-                String(t.capster_id) === String(currentUser.id) &&
-                String(t.tanggal).startsWith(today)
+                String(t.capster_id) === String(selectedCapsterId) &&
+                String(t.tanggal).startsWith(todayStr)
             );
-            const mealValue = hasTransToday ? 0 : parseMoney(currentUser.uang_makan);
+            const mealValue = hasTransToday ? 0 : parseMoney(staffInfo?.uang_makan || 0);
 
             const payload = {
                 action: 'save_transaction',
-                branch_id: currentUser.cabang_id || 'BR-101',
-                capster_id: currentUser.id || 'C-001',
+                branch_id: staffInfo?.cabang_id || currentUser.cabang_id || 'BR-101',
+                capster_id: selectedCapsterId,
                 customer_id: selectedCustomerId,
                 items: cart,
                 total: total,
@@ -1697,11 +2636,6 @@
             };
 
             try {
-                await fetch(APP_URL, {
-                    method: 'POST',
-                    body: JSON.stringify(payload)
-                });
-
                 // Optimistic UI Update: Langsung masukkan data ke tampilan lokal agar real-time
                 const tempTx = {
                     ...payload,
@@ -1713,16 +2647,23 @@
 
                 // Update UI Seketika
                 renderDashboard();
+
+                // Kirim ke server satu kali saja
+                await fetch(APP_URL, {
+                    method: 'POST',
+                    body: JSON.stringify(payload)
+                });
+
+                showToast('success', `Transaksi ${customerInput || 'Guest'} Berhasil Disimpan!`);
+
+                // Reset POS
                 cart = [];
                 document.getElementById('pos-customer').value = '';
                 renderCart();
-
-                alert(`Transaksi untuk ${customerInput || 'Guest'} senilai Rp ${total.toLocaleString()} Berhasil Disimpan!`);
-
-                // Sinkronisasi ulang dengan data asli di background (jika perlu)
-                fetchDataFromGAS();
+                // Opsional: renderDashboard lagi jika ada data server yang mengubah stat
+                renderDashboard();
             } catch (err) {
-                alert('Gagal menyimpan transaksi: ' + err.message);
+                showToast('error', 'Gagal menyimpan transaksi: ' + err.message);
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = originalText;
@@ -1747,9 +2688,10 @@
                     method: 'POST',
                     body: JSON.stringify(payload)
                 });
-                alert(`Absensi ${status} untuk ${currentUser.name} Berhasil dicatat!`);
+                showToast('success', `Absensi ${status} Berhasil dicatat!`);
+                setTimeout(() => fetchDataFromGAS(), 1000);
             } catch (err) {
-                alert('Gagal absensi: ' + err.message);
+                showToast('error', 'Gagal absensi: ' + err.message);
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = originalText;
@@ -1761,46 +2703,46 @@
             if (!tbody) return;
 
             let logs = dbData.attendance || [];
-
-            // Jika bukan owner, hanya tampilkan absen milik sendiri
             if (currentUser.role !== 'owner') {
                 logs = logs.filter(l => String(l.capster_id) === String(currentUser.id));
             }
 
             if (logs.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="4" style="text-align:center">Belum ada data absensi.</td></tr>';
+                document.getElementById('pagination-attendance').innerHTML = '';
                 return;
             }
 
-            tbody.innerHTML = [...logs].reverse().map(l => {
+            const data = [...logs].reverse();
+            const total = data.length;
+            const p = pagination.attendance;
+            const start = (p.page - 1) * p.size;
+            const paginated = data.slice(start, start + p.size);
+
+            tbody.innerHTML = paginated.map(l => {
                 const staff = dbData.capsters.find(s => String(s.id) === String(l.capster_id));
                 const name = staff ? staff.nama : (l.capster_id || 'Unknown');
-
                 let statusClass = 'badge-success';
                 if (l.status === 'Izin' || l.status === 'Sakit') statusClass = 'badge-warning';
 
-                // Format Tanggal & Jam agar bersih dari 1899 atau seconds
-                const formatDate = (str) => {
-                    if (!str || str === '-') return '-';
-                    return str.split(' ')[0]; // Ambil YYYY-MM-DD saja
-                };
                 const formatTime = (str) => {
                     if (!str || str === '-') return '-';
-                    // Jika ada format 1899-12-30 09:58:30 -> ambil 09:58
                     const parts = str.split(' ');
                     const timePart = parts.length > 1 ? parts[1] : parts[0];
-                    return timePart.split(':').slice(0, 2).join(':'); // Ambil HH:mm
+                    return timePart.split(':').slice(0, 2).join(':');
                 };
 
                 return `
                     <tr>
-                        <td>${formatDate(l.tanggal)}</td>
+                        <td>${String(l.tanggal).split(' ')[0]}</td>
                         <td><div style="font-weight:600">${name}</div></td>
                         <td>${formatTime(l.jam_masuk || l.timestamp)}</td>
                         <td><span class="badge ${statusClass}">${l.status}</span></td>
                     </tr>
                 `;
             }).join('');
+
+            renderPagination('attendance', total, p.size, p.page);
         }
 
         function renderCustomersView() {
@@ -1813,7 +2755,12 @@
                 c.whatsapp.toLowerCase().includes(search)
             );
 
-            tbody.innerHTML = filtered.map(c => `
+            const total = filtered.length;
+            const p = pagination.customers;
+            const start = (p.page - 1) * p.size;
+            const paginated = filtered.slice(start, start + p.size);
+
+            tbody.innerHTML = paginated.map(c => `
                 <tr>
                     <td><div style="font-weight: 600;">${c.nama}</div></td>
                     <td>${c.whatsapp}</td>
@@ -1825,7 +2772,9 @@
                         <button class="btn btn-glass" onclick="editCustomer('${c.id}')" style="padding: 5px 8px; font-size: 0.8rem; color: var(--secondary);"><i class="fas fa-edit"></i> Edit</button>
                     </td>
                 </tr>
-                `).join('');
+            `).join('');
+
+            renderPagination('customers', total, p.size, p.page);
         }
 
         function renderMyCustomers() {
@@ -1833,19 +2782,26 @@
             if (!tbody) return;
 
             let data = dbData.transactions || [];
-            // Filter hanya data capster yang sedang login
             if (currentUser.role !== 'owner') {
                 data = data.filter(t => String(t.capster_id) === String(currentUser.id));
             }
 
             if (data.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="4" style="text-align:center">Belum ada riwayat pelanggan.</td></tr>';
+                document.getElementById('pagination-my_customers').innerHTML = '';
                 return;
             }
 
-            tbody.innerHTML = [...data].reverse().map(t => {
+            const sorted = [...data].reverse();
+            const total = sorted.length;
+            const p = pagination.my_customers;
+            const start = (p.page - 1) * p.size;
+            const paginated = sorted.slice(start, start + p.size);
+
+            tbody.innerHTML = paginated.map(t => {
                 const customer = dbData.customers.find(c => String(c.id) === String(t.customer_id));
                 const custName = customer ? customer.nama : (t.customer_id || 'Walk-in');
+                const staff = dbData.capsters.find(s => String(s.id) === String(t.capster_id));
 
                 let items = [];
                 try {
@@ -1859,23 +2815,26 @@
                     </div>
                 `).join('');
 
-                const comm = parseMoney(t.komisi_capster || t.capster_comm);
-                const meal = parseMoney(t.uang_makan || t.meal_allowance);
+                const rate = staff ? (parseFloat(String(staff.persen_komisi).replace(/[^0-9.]/g, '')) || 0) : 0;
+                const jasaOnly = items.reduce((s, it) => s + (it.kategori === 'Jasa' ? parseMoney(it.harga) : 0), 0);
+                const actualComm = jasaOnly * (rate / 100);
 
                 return `
                     <tr>
                         <td>${new Date(t.tanggal).toLocaleDateString('id-ID')}</td>
                         <td><div style="font-weight:600">${custName}</div></td>
+                        <td style="font-size: 0.85rem; color: var(--primary)">${staff ? staff.nama : 'Unknown'}</td>
                         <td><div style="max-width:250px">${itemNames}</div></td>
                         <td><span class="badge" style="background:rgba(255,255,255,0.1)">${t.metode_bayar || t.payment_method || 'Cash'}</span></td>
                         <td>
-                            <div style="color:var(--secondary); font-weight:700">Rp ${comm.toLocaleString()}</div>
-                            ${meal > 0 ? `<div style="font-size:0.75rem; color:var(--danger)">+ Rp ${meal.toLocaleString()} (Uang Makan)</div>` : ''}
-                            <div style="font-size:0.75rem; color:var(--text-dim)">Detail Komisi</div>
+                            <div style="color:var(--secondary); font-weight:700">Rp ${actualComm.toLocaleString()}</div>
+                            <div style="font-size:0.75rem; color:var(--text-dim)">Rate: ${rate}%</div>
                         </td>
                     </tr>
                 `;
             }).join('');
+
+            renderPagination('my_customers', total, p.size, p.page);
         }
 
         function setPaymentMethod(method, btn) {
@@ -1897,9 +2856,28 @@
             document.getElementById('selected-payment-method').value = ''; // Reset, force choice
         }
 
+        function populateCapsterSelect() {
+            const select = document.getElementById('pos-capster');
+            if (!select) return;
+
+            const activeCapsters = dbData.capsters.filter(c => (c.status || 'Aktif') === 'Aktif');
+            select.innerHTML = activeCapsters.map(c => {
+                const branch = dbData.branches.find(b => String(b.id) === String(c.cabang_id));
+                return `<option value="${c.id}">${c.nama} (${branch ? branch.nama : 'No Branch'})</option>`;
+            }).join('');
+
+            // Default ke diri sendiri jika yang login adalah capster
+            if (currentUser && currentUser.role !== 'owner') {
+                select.value = currentUser.id;
+                select.disabled = true;
+            } else {
+                select.disabled = false;
+            }
+        }
+
         async function savePaymentSetting() {
             const val = document.getElementById('payment-methods-input').value.trim();
-            if (!val) return alert('Input tidak boleh kosong!');
+            if (!val) return showToast('warning', 'Input tidak boleh kosong!');
 
             const btn = event.currentTarget;
             const originalText = btn.innerHTML;
@@ -1907,7 +2885,7 @@
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...';
 
             try {
-                const response = await fetch(APP_URL, {
+                await fetch(APP_URL, {
                     method: 'POST',
                     body: JSON.stringify({
                         action: 'update_setting',
@@ -1916,11 +2894,10 @@
                     })
                 });
 
-                alert('Metode Pembayaran Berhasil Diperbarui!');
-                dbData.settings.metode_pembayaran = val;
-                renderPaymentMethodsInPOS();
+                showToast('success', 'Metode Pembayaran Berhasil Diperbarui!');
+                fetchDataFromGAS();
             } catch (err) {
-                alert('Gagal simpan: ' + err.message);
+                showToast('error', 'Gagal simpan: ' + err.message);
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = originalText;
@@ -1936,24 +2913,49 @@
                 data = data.filter(e => String(e.cabang_id) === String(currentUser.cabang_id));
             }
 
-            tbody.innerHTML = data.map(e => `
-                < tr >
-                    <td>${e.tanggal}</td>
-                    <td>${dbData.branches.find(b => String(b.id) === String(e.cabang_id))?.nama || e.cabang_id}</td>
+            // Sort by latest date
+            data.sort((a, b) => new Date(b.tanggal) - new Date(a.tanggal));
+
+            const total = data.length;
+            const p = pagination.expenses;
+            const start = (p.page - 1) * p.size;
+            const paginated = data.slice(start, start + p.size);
+
+            tbody.innerHTML = paginated.map(e => `
+                <tr>
+                    <td>${String(e.tanggal).substring(0, 10)}</td>
+                    <td>${dbData.branches.find(b => String(b.id) === String(e.cabang_id))?.nama || 'Unknown'}</td>
                     <td><span class="badge" style="background:rgba(255,255,255,0.1)">${e.kategori}</span></td>
                     <td>${e.keterangan}</td>
-                    <td style="color:var(--danger)">Rp ${parseInt(e.jumlah || e.total).toLocaleString()}</td>
-                </tr >
-                `).join('');
+                    <td style="color:var(--danger)">Rp ${parseInt(e.jumlah || 0).toLocaleString()}</td>
+                </tr>
+            `).join('');
+
+            renderPagination('expenses', total, p.size, p.page);
         }
 
         function showExpenseModal() {
-            openModal('Catat Pengeluaran Baru', [
-                { label: 'Cabang', key: 'cabang_id', value: currentUser.cabang_id },
-                { label: 'Kategori', key: 'kategori', placeholder: 'Sewa / Listrik / Alat / Sabun' },
-                { label: 'Keterangan', key: 'keterangan', placeholder: 'Contoh: Bayar Listrik Bln Feb' },
-                { label: 'Jumlah (Rp)', key: 'jumlah', type: 'number', placeholder: 'Harga...' }
-            ], '', 'save_expense');
+            const fields = [
+                { label: 'Kategori', key: 'kategori', placeholder: 'Sewa / Sabun / Alat tulis / Listrik' },
+                { label: 'Keterangan', key: 'keterangan', placeholder: 'Contoh: Sabun cuci 2 botol' },
+                { label: 'Jumlah (Rp)', key: 'jumlah', type: 'number', placeholder: 'Masukkan nominal...' }
+            ];
+
+            if (currentUser.role === 'owner') {
+                fields.unshift({
+                    label: 'Cabang',
+                    key: 'cabang_id',
+                    type: 'select',
+                    options: dbData.branches.map(b => ({ label: b.nama, value: b.id }))
+                });
+            } else {
+                const myBranch = dbData.branches.find(b => String(b.id) === String(currentUser.cabang_id));
+                // Tampilkan nama cabang sebagai info (readonly) dan simpan ID di hidden field
+                fields.unshift({ label: 'ID Cabang', key: 'cabang_id', value: currentUser.cabang_id, type: 'hidden' });
+                fields.unshift({ label: 'Cabang', key: 'cabang_display', value: myBranch ? myBranch.nama : 'Unknown', readonly: true });
+            }
+
+            openModal('Catat Pengeluaran Baru', fields, '', 'save_expense');
         }
 
         function renderStaffData() {
@@ -2034,26 +3036,46 @@
             const c = dbData.capsters.find(item => String(item.id) === String(capsterId));
             if (!c) return;
 
-            // Hitung komisi asli dari riwayat transaksi
-            const capsterTrans = (dbData.transactions || []).filter(t => String(t.capster_id) === String(capsterId));
-            const totalComm = capsterTrans.reduce((sum, t) => sum + (parseInt(t.komisi_capster || t.capster_comm) || 0), 0);
+            // Samakan logika filter dengan renderPayroll (Bulan Ini)
+            const now = new Date();
+            const currentMonth = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+            const capsterTrans = (dbData.transactions || []).filter(t => {
+                const tDate = String(t.tanggal || t.Tanggal || '');
+                const tId = String(t.capster_id || t.CapsterID || '').trim();
+                return tId === String(capsterId).trim() && tDate.startsWith(currentMonth);
+            });
+
+            const rate = parseFloat(String(c.persen_komisi || 0).replace(/[^\d.]/g, '')) || 0;
+            const totalComm = capsterTrans.reduce((sum, t) => {
+                const amount = parseMoney(t.total || t.Total || t.total_harga || 0);
+                return sum + (amount * (rate / 100));
+            }, 0);
 
             const base = parseInt(c.gaji_pokok || 0);
-            const meal = parseInt(c.uang_makan || 0) * 26;
+
+            // Hitung Uang Makan Dinamis
+            let daysInPeriod = 0;
+            if (currentMonth === (now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0'))) {
+                daysInPeriod = now.getDate();
+            } else {
+                const [y, m] = currentMonth.split('-').map(Number);
+                daysInPeriod = new Date(y, m, 0).getDate();
+            }
+            const meal = parseInt(c.uang_makan || 0) * daysInPeriod;
             const totalOverall = base + meal + totalComm;
 
             let detailHtml = `
                 <div style="margin-bottom: 20px;">
-                    <h3>${c.nama} - Rincian Gaji</h3>
+                    <h3>${c.nama} - Rincian Gaji (Bulan Ini)</h3>
                 </div>
                 <div class="glass-card" style="margin-bottom: 15px;">
                     <p>Gaji Pokok: <span style="float:right">Rp ${base.toLocaleString()}</span></p>
-                    <p>Uang Makan (26 hari): <span style="float:right">Rp ${meal.toLocaleString()}</span></p>
-                    <p>Komisi Jasa (${c.persen_komisi}%): <span style="float:right">Rp ${totalComm.toLocaleString()}</span></p>
+                    <p>Uang Makan (${daysInPeriod} Hari): <span style="float:right">Rp ${meal.toLocaleString()}</span></p>
+                    <p>Komisi Jasa (${rate}%): <span style="float:right">Rp ${totalComm.toLocaleString()}</span></p>
                     <hr style="border: 0.5px solid var(--glass-border); margin: 10px 0;">
                     <p style="font-weight:700">Total Take Home Pay: <span style="float:right; color:var(--secondary)">Rp ${totalOverall.toLocaleString()}</span></p>
                 </div>
-                <p style="font-size: 0.8rem; color: var(--text-dim); margin-bottom: 1rem;">* Komisi dihitung dari ${capsterTrans.length} total transaksi yang dikerjakan.</p>
+                <p style="font-size: 0.8rem; color: var(--text-dim); margin-bottom: 1rem;">* Komisi dihitung dari ${capsterTrans.length} transaksi pada bulan ini.</p>
                 <button class="btn btn-primary" style="width: 100%;" onclick="closeLogModal()">TUTUP</button>
             `;
 
@@ -2095,12 +3117,26 @@
             document.getElementById('generic-form').setAttribute('data-action', action);
 
             const container = document.getElementById('form-fields');
-            container.innerHTML = fields.map(f => `
-                <div class="form-group">
-                    <label class="form-label">${f.label}</label>
-                    <input type="${f.type || 'text'}" class="form-input" id="field-${f.key}" value="${f.value || ''}" placeholder="${f.placeholder || ''}">
-                </div>
-            `).join('');
+            container.innerHTML = fields.map(f => {
+                if (f.type === 'hidden') {
+                    return `<input type="hidden" id="field-${f.key}" value="${f.value || ''}">`;
+                }
+                if (f.type === 'select') {
+                    const opts = (f.options || []).map(o => `<option value="${o.value}" ${String(o.value) === String(f.value) ? 'selected' : ''}>${o.label}</option>`).join('');
+                    return `
+                        <div class="form-group">
+                            <label class="form-label">${f.label}</label>
+                            <select class="form-input" id="field-${f.key}" style="background: rgba(15,23,42,0.8); color: white;">${opts}</select>
+                        </div>
+                    `;
+                }
+                return `
+                    <div class="form-group">
+                        <label class="form-label">${f.label}</label>
+                        <input type="${f.type || 'text'}" class="form-input" id="field-${f.key}" value="${f.value || ''}" placeholder="${f.placeholder || ''}" ${f.readonly ? 'readonly' : ''}>
+                    </div>
+                `;
+            }).join('');
 
             document.getElementById('modal-container').style.display = 'flex';
         }
@@ -2109,11 +3145,13 @@
             const c = dbData.capsters.find(item => String(item.id) === String(id));
             if (!c) return;
 
+            const branchOptions = dbData.branches.map(b => ({ label: b.nama, value: b.id }));
+
             openModal('Manajemen Operasional: ' + c.nama, [
-                { label: 'Cabang Penempatan', key: 'cabang_id', value: c.cabang_id },
+                { label: 'Cabang Penempatan', key: 'cabang_id', type: 'select', options: branchOptions, value: c.cabang_id },
                 { label: 'Gaji Pokok', key: 'gaji_pokok', value: c.gaji_pokok, type: 'number' },
-                { label: 'Komisi (%)', key: 'persen_komisi', value: c.persen_komisi, type: 'number' },
-                { label: 'Uang Makan /Hari', key: 'uang_makan', value: c.uang_makan, type: 'number' },
+                { label: 'Persen Komisi (%)', key: 'persen_komisi', value: c.persen_komisi, type: 'number' },
+                { label: 'Uang Makan / Hari', key: 'uang_makan', value: c.uang_makan, type: 'number' },
                 { label: 'Status Aktif', key: 'status', value: c.status }
             ], id, 'update_capster');
         }
@@ -2126,16 +3164,22 @@
                 { label: 'Nama Lengkap', key: 'nama', value: c.nama },
                 { label: 'WhatsApp (Login ID)', key: 'whatsapp', value: c.whatsapp },
                 { label: 'Password Baru', key: 'password', value: c.password, placeholder: 'Ketik ulang jika ingin ganti' },
-                { label: 'Peran', key: 'peran', value: c.peran || 'capster' }
-            ], id, 'update_capster'); // Tetap update_capster karena hook backend sama
+                {
+                    label: 'Peran User', key: 'peran', type: 'select',
+                    options: [{ label: 'Capster (Staf)', value: 'capster' }, { label: 'Owner (Admin)', value: 'owner' }],
+                    value: c.peran || 'capster'
+                }
+            ], id, 'update_capster');
         }
 
         function showCapsterModal() {
+            const branchOptions = dbData.branches.map(b => ({ label: b.nama, value: b.id }));
+
             openModal('Rekrut Karyawan Baru', [
                 { label: 'Nama Lengkap', key: 'nama', placeholder: 'Nama sesuai KTP...' },
                 { label: 'WhatsApp', key: 'whatsapp', placeholder: '628...' },
                 { label: 'Password Awal', key: 'password', value: '123456' },
-                { label: 'ID Cabang Awalan', key: 'cabang_id', placeholder: 'BR-...' }
+                { label: 'Penempatan Cabang', key: 'cabang_id', type: 'select', options: branchOptions }
             ], '', 'update_capster');
         }
 
@@ -2175,7 +3219,7 @@
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...';
 
             try {
-                // Optimistic Local Update untuk data capster agar 'Realtime'
+                // Optimistic Local Update agar 'Realtime'
                 if (action === 'update_capster' && id) {
                     const idx = dbData.capsters.findIndex(it => String(it.id) === String(id));
                     if (idx !== -1) {
@@ -2183,7 +3227,6 @@
                             const key = f.id.replace('field-', '');
                             dbData.capsters[idx][key] = f.value;
                         });
-                        // Re-render semua yang terpengaruh
                         renderDashboard();
                         renderPayroll();
                         renderCapsters();
@@ -2191,16 +3234,34 @@
                     }
                 }
 
+                // New: Optimistic Update for Expenses
+                if (action === 'save_expense') {
+                    const newExp = {
+                        id: 'TEMP-' + Date.now(),
+                        tanggal: new Date().toLocaleString('en-CA').replace(',', ''), // YYYY-MM-DD
+                        cabang_id: payload.cabang_id,
+                        kategori: payload.kategori,
+                        keterangan: payload.keterangan,
+                        jumlah: payload.jumlah
+                    };
+                    if (!dbData.expenses) dbData.expenses = [];
+                    dbData.expenses.unshift(newExp);
+
+                    // Langsung update UI tanpa nunggu GAS
+                    renderExpenses();
+                    renderDashboard();
+                }
+
                 await fetch(APP_URL, {
                     method: 'POST',
                     body: JSON.stringify(payload)
                 });
 
-                alert('Data berhasil dikirim ke server! Terimakasih.');
+                showToast('success', 'Data berhasil diperbarui!');
                 closeModal();
                 setTimeout(() => fetchDataFromGAS(), 1500);
             } catch (err) {
-                alert('Gagal menyimpan data: ' + err.message);
+                showToast('error', 'Gagal menyimpan: ' + err.message);
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = 'SIMPAN PERUBAHAN <i class="fas fa-save"></i>';
