@@ -499,10 +499,17 @@
             color: white;
         }
 
+        .payout-summary-card {
+            height: fit-content;
+            position: sticky;
+            top: 2rem;
+        }
+
         /* --- MOBILE RESPONSIVE --- */
         @media (max-width: 992px) {
             #sidebar {
                 width: 80px;
+                padding: 2rem 10px;
             }
 
             .nav-text,
@@ -527,19 +534,21 @@
 
             #sidebar {
                 width: 100%;
-                height: 70px;
+                height: auto;
                 position: fixed;
                 bottom: 0;
                 top: auto;
                 left: 0;
                 flex-direction: row;
-                justify-content: space-around;
+                justify-content: flex-start;
                 align-items: center;
-                padding: 0 10px;
+                padding: 5px;
                 z-index: 1000;
                 border-right: none;
                 border-top: 1px solid var(--glass-border);
                 border-radius: 20px 20px 0 0;
+                overflow-x: auto;
+                gap: 5px;
             }
 
             #sidebar .logo-container,
@@ -547,21 +556,36 @@
                 display: none;
             }
 
+            #sidebar .nav-links {
+                display: flex;
+                width: 100%;
+                justify-content: space-between;
+                overflow-x: auto;
+                scroll-behavior: smooth;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            #sidebar .nav-links::-webkit-scrollbar {
+                display: none;
+            }
+
             .nav-link {
                 flex-direction: column;
                 gap: 4px;
-                padding: 8px;
+                padding: 8px 12px;
                 margin-bottom: 0;
-                font-size: 0.7rem;
-                flex: 1;
+                font-size: 0.65rem;
+                flex-shrink: 0;
+                min-width: 70px;
             }
 
             .nav-link i {
-                font-size: 1.25rem;
+                font-size: 1.1rem;
             }
 
             .nav-link .nav-text {
                 display: block;
+                white-space: nowrap;
             }
 
             #main-content {
@@ -570,12 +594,36 @@
             }
 
             .stat-grid {
-                grid-template-columns: 1fr;
+                grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+                gap: 10px;
             }
 
-            /* Stack POS & Charts */
-            #pos-view .glass-card>div,
-            section#dashboard-view>div {
+            .stat-card {
+                padding: 12px;
+                flex-direction: column;
+                align-items: flex-start;
+                text-align: left;
+                gap: 8px;
+            }
+
+            .stat-icon {
+                width: 32px;
+                height: 32px;
+                font-size: 1rem;
+            }
+
+            .stat-info h3 {
+                font-size: 0.7rem;
+            }
+
+            .stat-info p {
+                font-size: 1rem;
+            }
+
+            /* Global Responsive Grid for sections */
+            .grid-2-1,
+            .grid-1-340,
+            .grid-1-1 {
                 grid-template-columns: 1fr !important;
                 gap: 1.5rem !important;
             }
@@ -586,23 +634,38 @@
                 gap: 1rem;
             }
 
+            .flex-between div,
             .flex-between button {
                 width: 100%;
             }
 
-            /* Responsive Tables */
-            .table-container {
-                overflow-x: auto;
-                -webkit-overflow-scrolling: touch;
+            /* POS Adjustments */
+            .service-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 10px;
             }
 
-            table {
-                min-width: 600px;
-                /* Force scroll on very small screens */
+            .service-item {
+                padding: 1rem;
             }
 
-            h2 {
-                font-size: 1.5rem;
+            /* Modal Adjustments */
+            .modal-content {
+                padding: 1.5rem;
+                width: 95% !important;
+                margin: 10px;
+            }
+
+            .payout-summary-card {
+                position: static;
+                height: auto;
+            }
+
+            /* Table adjust */
+            td,
+            th {
+                padding: 12px 8px;
+                font-size: 0.8rem;
             }
         }
 
@@ -889,7 +952,7 @@
             </div>
 
             <!-- Chart & Top Capsters -->
-            <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem;">
+            <div class="grid-2-1" style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem;">
                 <div class="glass-card">
                     <h3 style="margin-bottom: 1.5rem;">Statistik Mingguan</h3>
                     <canvas id="revenueChart" height="200"></canvas>
@@ -908,7 +971,8 @@
         <section id="pos-view" class="view">
             <div class="glass-card">
                 <h2>Kasir Baru</h2>
-                <div style="display: grid; grid-template-columns: 1fr 340px; gap: 2rem; margin-top: 2rem;">
+                <div class="grid-1-340"
+                    style="display: grid; grid-template-columns: 1fr 340px; gap: 2rem; margin-top: 2rem;">
 
                     <!-- LEFT: Selection -->
                     <div>
@@ -985,7 +1049,8 @@
                     <p style="color: var(--text-dim)" id="live-date">Kamis, 19 Februari 2026</p>
                 </div>
 
-                <div id="attendance-form-container" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div id="attendance-form-container" class="grid-1-1"
+                    style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                     <button class="btn btn-primary" style="height: 120px; font-size: 1.25rem; flex-direction: column;"
                         onclick="postAttendance('Hadir')">
                         <i class="fas fa-sign-in-alt" style="font-size: 2rem; margin-bottom: 10px;"></i> Masuk
@@ -1977,7 +2042,7 @@
                     </div>
                 </div>
 
-                <div style="display: grid; grid-template-columns: 2fr 1.2fr; gap: 1.5rem;">
+                <div class="grid-2-1" style="display: grid; grid-template-columns: 2fr 1.2fr; gap: 1.5rem;">
                     <div>
                         <div class="glass-card" style="margin-bottom: 1.5rem;">
                             <div class="flex-between" style="margin-bottom: 1.5rem;">
@@ -2028,7 +2093,7 @@
                         </div>
                     </div>
 
-                    <div class="glass-card" style="height: fit-content; position: sticky; top: 2rem;">
+                    <div class="glass-card payout-summary-card">
                         <h3 style="margin-bottom: 1.5rem; border-bottom: 1px solid var(--glass-border); padding-bottom: 10px;">Ringkasan Setoran</h3>
                         <div style="margin-bottom: 1.5rem;">
                             <!-- OMSET SECTION -->
