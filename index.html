@@ -995,6 +995,18 @@
                             </select>
                         </div>
 
+                        <div class="form-group"
+                            style="margin-top: 1rem; display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            <div>
+                                <label class="form-label">Tanggal Transaksi</label>
+                                <input type="date" id="pos-date" class="form-input">
+                            </div>
+                            <div>
+                                <label class="form-label">Jam Transaksi</label>
+                                <input type="time" id="pos-time" class="form-input">
+                            </div>
+                        </div>
+
                         <h4 style="margin-top: 2rem;">Pilih Jasa / Produk</h4>
                         <div id="pos-services" class="service-grid">
                             <!-- Dynamic services -->
@@ -1503,6 +1515,10 @@
                     }
                     if (viewName === 'pos') {
                         populateCapsterSelect();
+                        // Set default waktu ke "Sekarang"
+                        const now = new Date();
+                        document.getElementById('pos-date').value = now.toISOString().split('T')[0];
+                        document.getElementById('pos-time').value = now.toTimeString().split(' ')[0].substring(0, 5);
                     }
                     if (viewName === 'expenses') {
                         pagination.expenses.page = 1;
@@ -2337,39 +2353,112 @@
             if (!p) return;
 
             const b = dbData.branches.find(br => String(br.id) === String(p.cabang_id));
+
+            let txDetailsHtml = '';
+            let txIds = [];
+            if (p.transaksi_ids) {
+                txIds = typeof p.transaksi_ids === 'string' ? p.transaksi_ids.split(',') : p.transaksi_ids;
+            }
+
+            const relatedTx = (dbData.transactions || []).filter(t => txIds.map(String).includes(String(t.id)));
+
+            if (relatedTx.length > 0) {
+                txDetailsHtml = `
+                    <div style="margin-top: 1.5rem;">
+                        <p style="font-weight: 500; font-size: 0.8rem; margin-bottom: 0.6rem; color: var(--secondary); text-transform: uppercase; letter-spacing: 0.5px;">Daftar Transaksi Terkait</p>
+                        <div style="max-height: 180px; overflow-y: auto; border-radius: 12px; background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.05);">
+                            <table style="width: 100%; font-size: 0.75rem; border-collapse: collapse;">
+                                <thead>
+                                    <tr style="background: rgba(255,255,255,0.03);">
+                                        <th style="padding: 12px 10px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.05); color: var(--text-dim); font-weight: 500; width: 110px;">Tanggal & Jam</th>
+                                        <th style="padding: 12px 10px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.05); color: var(--text-dim); font-weight: 500;">Layanan</th>
+                                        <th style="padding: 12px 10px; text-align: right; border-bottom: 1px solid rgba(255,255,255,0.05); color: var(--text-dim); font-weight: 500; width: 90px;">Nominal</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${relatedTx.map(t => {
+                    let items = [];
+                    try { items = typeof t.item_json === 'string' ? JSON.parse(t.item_json) : (t.item_json || []); } catch (e) { }
+                    const serviceNames = items.map(it => it.nama).join(', ');
+                    const fullDate = String(t.tanggal || t.Tanggal || '');
+                    const dateDisp = fullDate.includes(' ') ? fullDate.substring(0, 16) : fullDate.substring(0, 10);
+                    return `
+                                            <tr>
+                                                <td style="padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.03); color: var(--text-dim);">${dateDisp}</td>
+                                                <td style="padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.03); color: white;">${serviceNames}</td>
+                                                <td style="padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.03); text-align: right; font-weight: 600; color: var(--primary);">Rp ${parseMoney(t.total).toLocaleString()}</td>
+                                            </tr>
+                                        `;
+                }).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+            }
+
             const html = `
-                <div style="text-align: left; font-size: 0.9rem;">
-                    <div style="margin-bottom: 20px; padding: 10px; background: var(--glass); border-radius: 8px;">
-                        <p><b>Waktu:</b> ${p.tanggal}</p>
-                        <p><b>Cabang:</b> ${b ? b.nama : '-'}</p>
-                        <p><b>Catatan:</b> ${p.catatan || '-'}</p>
+                <div style="text-align: left; font-family: 'Inter', sans-serif; color: white;">
+                    <div style="background: rgba(99, 102, 241, 0.08); border: 1px solid rgba(99, 102, 241, 0.15); padding: 0.85rem; border-radius: 12px; margin-bottom: 1rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
+                            <div>
+                                <p style="font-size: 0.65rem; color: var(--secondary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px;">ID SETORAN</p>
+                                <p style="font-size: 1rem; font-weight: 700; color: white;">${p.id}</p>
+                            </div>
+                            <div style="text-align: right;">
+                                <p style="font-size: 0.65rem; color: var(--text-dim); text-transform: uppercase; margin-bottom: 2px;">CABANG</p>
+                                <p style="font-size: 0.85rem; font-weight: 600; color: white;">${b ? b.nama : '-'}</p>
+                            </div>
+                        </div>
+                        <div style="border-top: 1px solid rgba(255,255,255,0.05); padding-top: 0.5rem; font-size: 0.8rem;">
+                            <p style="margin-bottom: 2px; color: var(--text-dim);"><i class="far fa-calendar-alt" style="margin-right: 6px;"></i> ${String(p.tanggal).replace('T', ' ').substring(0, 19)}</p>
+                            <p style="color: var(--text-dim);"><i class="far fa-comment-dots" style="margin-right: 6px;"></i> ${p.catatan || 'Tidak ada catatan'}</p>
+                        </div>
                     </div>
-                    
-                    <div class="flex-between" style="margin-bottom: 8px;">
-                        <span>Total Omset Kotor:</span>
-                        <span>Rp ${parseMoney(p.total_jasa).toLocaleString()}</span>
+
+                    <div style="padding: 0 0.25rem; margin-bottom: 1rem;">
+                        <div class="flex-between" style="margin-bottom: 0.4rem; font-size: 0.85rem;">
+                            <span style="color: var(--text-dim);">Total Omset Kotor</span>
+                            <span style="font-weight: 600; font-size: 0.9rem;">Rp ${parseMoney(p.total_jasa).toLocaleString()}</span>
+                        </div>
+                        ${txDetailsHtml}
                     </div>
-                    <div class="flex-between" style="margin-bottom: 8px; color: var(--danger)">
-                        <span>Komisi Capster:</span>
-                        <span>- Rp ${parseMoney(p.total_komisi).toLocaleString()}</span>
+
+                    <div style="border-top: 1px solid rgba(255,255,255,0.08); padding: 0.75rem 0.25rem; margin-bottom: 0.75rem;">
+                        <div class="flex-between" style="margin-bottom: 0.5rem; font-size: 0.85rem; color: #fca5a5;">
+                            <span>Potongan Komisi</span>
+                            <span style="font-weight: 600;">- Rp ${parseMoney(p.total_komisi).toLocaleString()}</span>
+                        </div>
+                        <div class="flex-between" style="font-size: 0.85rem; color: #fca5a5;">
+                            <span>Uang Makan</span>
+                            <span style="font-weight: 600;">- Rp ${parseMoney(p.total_uang_makan).toLocaleString()}</span>
+                        </div>
                     </div>
-                    <div class="flex-between" style="margin-bottom: 12px; color: var(--danger)">
-                        <span>Uang Makan:</span>
-                        <span>- Rp ${parseMoney(p.total_uang_makan).toLocaleString()}</span>
-                    </div>
-                    <hr style="border: 0.5px solid var(--glass-border); margin: 10px 0;">
-                    <div class="flex-between" style="font-weight: 800; font-size: 1.1rem; color: var(--success)">
-                        <span>SETORAN BERSIH:</span>
-                        <span>Rp ${parseMoney(p.setoran_bersih).toLocaleString()}</span>
+
+                    <div style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.12) 0%, rgba(16, 185, 129, 0.04) 100%); border: 1px solid rgba(16, 185, 129, 0.2); padding: 0.85rem; border-radius: 12px; display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <p style="font-size: 0.7rem; color: var(--success); text-transform: uppercase; font-weight: 600; margin-bottom: 2px;">Net di Tangan</p>
+                            <p style="font-size: 1.3rem; font-weight: 800; color: #10b981;">Rp ${parseMoney(p.setoran_bersih).toLocaleString()}</p>
+                        </div>
+                        <div style="width: 40px; height: 40px; background: rgba(16, 185, 129, 0.15); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #10b981; font-size: 1.2rem;">
+                            <i class="fas fa-check-double"></i>
+                        </div>
                     </div>
                 </div>
             `;
 
             Swal.fire({
-                title: 'Rincian Setoran ' + p.id,
+                title: 'Laporan Setoran',
                 html: html,
+                confirmButtonText: 'TUTUP',
                 confirmButtonColor: 'var(--primary)',
-                width: '450px'
+                width: '580px',
+                padding: '1rem',
+                background: 'var(--bg-dark)',
+                color: '#fff',
+                customClass: {
+                    popup: 'glass-card'
+                }
             });
         }
 
@@ -2679,8 +2768,17 @@
             const commPercent = staffInfo ? (parseFloat(String(staffInfo.persen_komisi).replace(/[^\d.]/g, '')) || 0) : 0;
             const commValue = jasaTotal * (commPercent / 100);
 
-            // Cek Uang Makan Hari Ini (LOKAL)
-            const todayStr = new Date().toLocaleDateString('en-CA');
+            // Ambil waktu kustom dari input
+            const customDate = document.getElementById('pos-date').value;
+            const customTime = document.getElementById('pos-time').value;
+            let finalDate = new Date();
+            if (customDate && customTime) {
+                // Menggabungkan tanggal dan jam menjadi objek Date
+                finalDate = new Date(customDate + 'T' + customTime);
+            }
+
+            // Cek Uang Makan Hari Ini (LOKAL) - Gunakan finalDate agar akurat
+            const todayStr = finalDate.toLocaleDateString('en-CA');
             const hasTransToday = (dbData.transactions || []).some(t =>
                 String(t.capster_id) === String(selectedCapsterId) &&
                 String(t.tanggal).startsWith(todayStr)
@@ -2692,6 +2790,7 @@
                 branch_id: staffInfo?.cabang_id || currentUser.cabang_id || 'BR-101',
                 capster_id: selectedCapsterId,
                 customer_id: selectedCustomerId,
+                custom_date: finalDate.toISOString(), // Sertakan tanggal kustom
                 items: cart,
                 total: total,
                 capster_comm: commValue,
@@ -2705,7 +2804,7 @@
                 const tempTx = {
                     ...payload,
                     id: 'TEMP-' + Date.now(),
-                    tanggal: new Date().toISOString()
+                    tanggal: finalDate.toISOString()
                 };
                 if (!dbData.transactions) dbData.transactions = [];
                 dbData.transactions.push(tempTx);
