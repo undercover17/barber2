@@ -852,6 +852,12 @@
                         style="padding: 8px 16px; font-size: 0.85rem;">Tahun Ini</button>
                 </div>
                 <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                    <label
+                        style="font-size: 0.8rem; color: var(--text-dim); cursor: pointer; display: flex; align-items: center; gap: 8px; background: rgba(0,0,0,0.2); padding: 5px 12px; border-radius: 10px; border: 1px solid var(--glass-border);">
+                        <input type="checkbox" id="dash-deduct-expenses" onchange="renderDashboard()"
+                            style="cursor: pointer; width: 14px; height: 14px;">
+                        <span>Tangguhkan pengeluaran pada saya</span>
+                    </label>
                     <div
                         style="display: flex; align-items: center; gap: 8px; background: rgba(0,0,0,0.2); padding: 5px 12px; border-radius: 10px; border: 1px solid var(--glass-border);">
                         <i class="fas fa-calendar-alt" style="color: var(--primary); font-size: 0.8rem;"></i>
@@ -937,7 +943,11 @@
                     </div>
                     <div class="stat-info">
                         <h3>Setoran Bersih</h3>
-                        <p id="stat-net" style="color: var(--success);">Rp 0</p>
+                        <p id="stat-net" style="color: var(--success); margin-bottom: 2px;">Rp 0</p>
+                        <div style="font-size: 0.7rem; color: var(--text-dim); display: flex; gap: 10px;">
+                            <span id="stat-net-cash">C: Rp 0</span>
+                            <span id="stat-net-qris">Q: Rp 0</span>
+                        </div>
                     </div>
                 </div>
                 <div class="glass-card stat-card">
@@ -1048,6 +1058,41 @@
                         </div>
                     </div>
 
+                    <!-- BOTTOM: Transaction List (Full Width) -->
+                    <div class="glass-card" style="grid-column: 1 / -1; margin-top: 2rem;">
+                        <div class="flex-between" style="margin-bottom: 1.5rem;">
+                            <h3 style="margin-bottom: 0;">Riwayat Transaksi <span id="pos-history-period"
+                                    style="font-size: 0.8rem; font-weight: normal; color: var(--text-dim);"></span></h3>
+                            <div style="display: flex; gap: 10px;">
+                                <button class="btn btn-glass dashboards-period-btn"
+                                    style="padding: 5px 12px; font-size: 0.8rem;"
+                                    onclick="setDashboardPeriod('today', this); renderPosHistory();">Hari Ini</button>
+                                <button class="btn btn-glass dashboards-period-btn"
+                                    style="padding: 5px 12px; font-size: 0.8rem;"
+                                    onclick="setDashboardPeriod('yesterday', this); renderPosHistory();">Kemarin</button>
+                                <button class="btn btn-glass dashboards-period-btn"
+                                    style="padding: 5px 12px; font-size: 0.8rem;"
+                                    onclick="setDashboardPeriod('week', this); renderPosHistory();">7 Hari</button>
+                            </div>
+                        </div>
+                        <div class="table-container">
+                            <table id="pos-history-table">
+                                <thead>
+                                    <tr>
+                                        <th>Waktu</th>
+                                        <th>Pelanggan</th>
+                                        <th>Layanan/Produk</th>
+                                        <th style="text-align:right">Total</th>
+                                        <th style="text-align:center">Metode</th>
+                                        <th style="text-align:center">Petugas</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Dynamic -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
             </div>
         </section>
@@ -1519,6 +1564,7 @@
                         const now = new Date();
                         document.getElementById('pos-date').value = now.toISOString().split('T')[0];
                         document.getElementById('pos-time').value = now.toTimeString().split(' ')[0].substring(0, 5);
+                        renderPosHistory();
                     }
                     if (viewName === 'expenses') {
                         pagination.expenses.page = 1;
@@ -1664,6 +1710,8 @@
             return parseInt(String(val).replace(/[^\d]/g, '')) || 0;
         };
 
+        const ID_DAYS = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+
         // --- SWEETALERT HELPERS ---
         const Toast = Swal.mixin({
             toast: true,
@@ -1795,7 +1843,8 @@
 
             // Filter data sesuai peran (Owner vs Cabang)
             if (currentUser.role !== 'owner') {
-                trans = trans.filter(t => String(t.capster_id) === String(currentUser.id));
+                // Untuk Capster/Manajer, tampilkan performa Cabang agar sinkron dengan menu Setoran
+                trans = trans.filter(t => String(t.cabang_id) === String(currentUser.cabang_id));
                 exps = exps.filter(e => String(e.cabang_id) === String(currentUser.cabang_id));
             }
 
@@ -1808,6 +1857,11 @@
                 const c = dbData.capsters.find(it => String(it.id) === String(t.capster_id));
                 const rate = c ? (parseFloat(String(c.persen_komisi).replace(/[^\d.]/g, '')) || 0) : 0;
 
+                // Gunakan komisi yang tersimpan jika ada, jika tidak hitung ulang
+                if (t.komisi_capster !== undefined && t.komisi_capster !== null && t.komisi_capster !== '') {
+                    return sum + parseMoney(t.komisi_capster);
+                }
+
                 let items = [];
                 try { items = typeof t.item_json === 'string' ? JSON.parse(t.item_json) : (t.item_json || []); } catch (e) { }
                 const jasaOnly = items.reduce((s, it) => s + (it.kategori === 'Jasa' ? parseMoney(it.harga) : 0), 0);
@@ -1817,24 +1871,49 @@
 
             // Hitung Uang Makan Otomatis (Harian per Capster aktif)
             // Biarpun ada pelanggan atau tidak, uang makan tetap dihitung (Overhead harian)
+            // Hitung Uang Makan Otomatis (Harian per Capster aktif) - SKIP SENIN (Libur Default)
+            function getDaysCountExcludingMonday(startDate, endDate) {
+                let count = 0;
+                let cur = new Date(startDate);
+                cur.setHours(0, 0, 0, 0);
+                const end = new Date(endDate);
+                end.setHours(0, 0, 0, 0);
+
+                while (cur <= end) {
+                    if (cur.getDay() !== 1) { // 1 = Senin
+                        count++;
+                    }
+                    cur.setDate(cur.getDate() + 1);
+                }
+                return count;
+            }
+
             let daysCount = 1;
-            if (dashboardFilter.type === 'today' || dashboardFilter.type === 'yesterday') {
-                daysCount = 1;
+            const todayClean = new Date();
+            todayClean.setHours(0, 0, 0, 0);
+
+            if (dashboardFilter.type === 'today') {
+                daysCount = todayClean.getDay() === 1 ? 0 : 1;
+            } else if (dashboardFilter.type === 'yesterday') {
+                const yest = new Date(todayClean);
+                yest.setDate(yest.getDate() - 1);
+                daysCount = yest.getDay() === 1 ? 0 : 1;
             } else if (dashboardFilter.type === 'week') {
-                daysCount = 7;
+                const start = new Date(todayClean);
+                start.setDate(start.getDate() - 7);
+                daysCount = getDaysCountExcludingMonday(start, todayClean);
             } else if (dashboardFilter.type === 'month') {
-                daysCount = now.getDate(); // Sampai hari ini di bulan ini
+                const start = new Date(todayClean.getFullYear(), todayClean.getMonth(), 1);
+                daysCount = getDaysCountExcludingMonday(start, todayClean);
             } else if (dashboardFilter.type === 'year') {
-                // Hitung jumlah hari yang sudah dilalui tahun ini
-                const startOfYear = new Date(now.getFullYear(), 0, 1);
-                const diff = now - startOfYear;
-                daysCount = Math.floor(diff / (1000 * 60 * 60 * 24)) + 1;
+                const start = new Date(todayClean.getFullYear(), 0, 1);
+                daysCount = getDaysCountExcludingMonday(start, todayClean);
             } else if (dashboardFilter.type === 'custom' && dashboardFilter.start && dashboardFilter.end) {
                 const s = new Date(dashboardFilter.start);
                 const e = new Date(dashboardFilter.end);
-                const limitEnd = e > now ? now : e;
-                const diffTime = Math.max(0, limitEnd - s);
-                daysCount = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+                daysCount = getDaysCountExcludingMonday(s, e > todayClean ? todayClean : e);
+            } else {
+                daysCount = todayClean.getDay() === 1 ? 0 : 1;
             }
 
             const relevantCapsters = dbData.capsters.filter(c => {
@@ -1846,23 +1925,45 @@
 
             const totalMeal = relevantCapsters.reduce((sum, c) => sum + parseMoney(c.uang_makan), 0) * daysCount;
 
-            const totalNet = totalRevenue - totalPayout - totalMeal;
             const totalExp = exps.reduce((sum, e) => sum + parseMoney(e.jumlah || e.total), 0);
+
+            // Logika baru: Centang tangguhkan pengeluaran
+            const deductCheck = document.getElementById('dash-deduct-expenses');
+            const isDeductExp = deductCheck ? deductCheck.checked : false;
+
+            // Setoran Bersih Dasar (Belum potong pengeluaran)
+            // Sebenarnya totalNet dihitung dari: Omset - Komisi - Uang Makan
+            const netBase = totalRevenue - totalPayout - totalMeal;
+            const totalNet = isDeductExp ? (netBase - totalExp) : netBase;
+
+            // Split Cash & QRIS (Pengeluaran dibebankan di Cash)
+            const netQRIS = totalQRIS;
+            const netCash = (totalCash - totalPayout - totalMeal) - (isDeductExp ? totalExp : 0);
 
             // Hitung pelanggan unik dari transaksi
             const uniqueCusts = new Set(trans.map(t => t.customer_id).filter(id => id)).size;
 
             const formatStat = (val) => `<span class="rp-label">Rp</span> ${val.toLocaleString()}`;
 
-            document.getElementById('stat-revenue').innerHTML = formatStat(totalRevenue);
-            document.getElementById('stat-cash').innerHTML = formatStat(totalCash);
-            document.getElementById('stat-qris').innerHTML = formatStat(totalQRIS);
-            document.getElementById('stat-payout').innerHTML = formatStat(totalPayout);
-            document.getElementById('stat-meal').innerHTML = formatStat(totalMeal);
-            document.getElementById('stat-net').innerHTML = formatStat(totalNet);
-            document.getElementById('stat-expenses').innerHTML = formatStat(totalExp);
+            if (document.getElementById('stat-revenue')) document.getElementById('stat-revenue').innerHTML = formatStat(totalRevenue);
+            if (document.getElementById('stat-cash')) document.getElementById('stat-cash').innerHTML = formatStat(totalCash);
+            if (document.getElementById('stat-qris')) document.getElementById('stat-qris').innerHTML = formatStat(totalQRIS);
+            if (document.getElementById('stat-payout')) document.getElementById('stat-payout').innerHTML = formatStat(totalPayout);
+            if (document.getElementById('stat-meal')) document.getElementById('stat-meal').innerHTML = formatStat(totalMeal);
+            if (document.getElementById('stat-net')) document.getElementById('stat-net').innerHTML = formatStat(totalNet);
+            if (document.getElementById('stat-net-cash')) document.getElementById('stat-net-cash').textContent = 'C: Rp ' + netCash.toLocaleString();
+            if (document.getElementById('stat-net-qris')) document.getElementById('stat-net-qris').textContent = 'Q: Rp ' + netQRIS.toLocaleString();
+            if (document.getElementById('stat-expenses')) document.getElementById('stat-expenses').innerHTML = formatStat(totalExp);
             document.getElementById('stat-customers').textContent = uniqueCusts;
-            document.getElementById('stat-services').textContent = trans.length; // Menampilkan total jasa dalam periode tersebut
+
+            // Hitung total item Jasa (bukan total transaksi) sesuai permintaan "Total Jasa"
+            let totalJasaCount = 0;
+            trans.forEach(t => {
+                let items = [];
+                try { items = typeof t.item_json === 'string' ? JSON.parse(t.item_json) : (t.item_json || []); } catch (e) { }
+                totalJasaCount += items.filter(it => it.kategori === 'Jasa').length;
+            });
+            document.getElementById('stat-services').textContent = totalJasaCount;
 
             // Init Chart (Data dari 7 hari terakhir selalu)
             const ctx = document.getElementById('revenueChart').getContext('2d');
@@ -2019,6 +2120,78 @@
             renderCart();
         }
 
+        function renderPosHistory() {
+            const tbody = document.querySelector('#pos-history-table tbody');
+            const periodLabel = document.getElementById('pos-history-period');
+            if (!tbody) return;
+
+            const now = new Date();
+            const todayStr = now.toLocaleDateString('en-CA');
+            let allTrans = dbData.transactions || [];
+            let trans = [];
+            let labelText = "";
+
+            // Gunakan logika filter yang sama dengan Dashboard
+            if (dashboardFilter.type === 'today') {
+                trans = allTrans.filter(t => String(t.tanggal).startsWith(todayStr));
+                labelText = "(Hari Ini)";
+            } else if (dashboardFilter.type === 'yesterday') {
+                const yesterday = new Date();
+                yesterday.setDate(now.getDate() - 1);
+                const yesterdayStr = yesterday.toLocaleDateString('en-CA');
+                trans = allTrans.filter(t => String(t.tanggal).startsWith(yesterdayStr));
+                labelText = "(Kemarin)";
+            } else if (dashboardFilter.type === 'week') {
+                const lastWeek = new Date();
+                lastWeek.setDate(now.getDate() - 7);
+                trans = allTrans.filter(t => new Date(t.tanggal) >= lastWeek);
+                labelText = "(7 Hari Terakhir)";
+            } else {
+                // Default ke hari ini jika tidak cocok
+                trans = allTrans.filter(t => String(t.tanggal).startsWith(todayStr));
+                labelText = "(Hari Ini)";
+            }
+
+            // Filter per cabang jika bukan owner
+            if (currentUser && currentUser.role !== 'owner') {
+                trans = trans.filter(t => String(t.cabang_id) === String(currentUser.cabang_id));
+            }
+
+            if (periodLabel) periodLabel.textContent = labelText;
+
+            if (trans.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 20px; color: var(--text-dim);">Tidak ada transaksi untuk periode ini</td></tr>';
+                return;
+            }
+
+            // Sort newest first
+            trans.sort((a, b) => new Date(b.tanggal) - new Date(a.tanggal));
+
+            tbody.innerHTML = trans.map(t => {
+                const cust = dbData.customers.find(c => String(c.id) === String(t.customer_id));
+                const staff = dbData.capsters.find(s => String(s.id) === String(t.capster_id));
+                let items = [];
+                try { items = typeof t.item_json === 'string' ? JSON.parse(t.item_json) : (t.item_json || []); } catch (e) { }
+                const itemNames = items.map(it => it.nama).join(', ');
+
+                const fullDate = String(t.tanggal || '');
+                const dateObj = new Date(fullDate);
+                const dayName = ID_DAYS[dateObj.getDay()] || '';
+                const timeDisp = fullDate.includes(' ') ? fullDate.split(' ')[1].substring(0, 5) : '-';
+
+                return `
+                    <tr>
+                        <td><div style="font-weight:600">${timeDisp}</div><div style="font-size:0.7rem; color:var(--text-dim)">${dayName}, ${fullDate.split(' ')[0]}</div></td>
+                        <td>${cust ? cust.nama : 'Walk-in'}</td>
+                        <td style="font-size:0.85rem">${itemNames}</td>
+                        <td style="text-align:right; font-weight:600; color:var(--primary)">Rp ${parseMoney(t.total).toLocaleString()}</td>
+                        <td style="text-align:center"><span class="badge" style="background:rgba(255,255,255,0.05)">${t.metode_bayar || t.payment_method || 'Cash'}</span></td>
+                        <td style="text-align:center; font-size:0.8rem; color:var(--secondary)">${staff ? staff.nama : '?'}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
         // --- PAYOUT / SETORAN LOGIC ---
         function renderPayouts() {
             const container = document.getElementById('payouts-view');
@@ -2141,13 +2314,31 @@
                             <hr style="border: 0.5px solid var(--glass-border); margin: 15px 0;">
                             
                             <div class="flex-between" style="margin-bottom: 8px;">
-                                <span style="color: var(--text-dim); font-size: 0.85rem;">Sisa Tunai di Toko:</span>
+                                <span style="color: var(--text-dim); font-size: 0.85rem;">Hak Owner (dari Tunai):</span>
                                 <span id="payout-sum-cash-net" style="font-weight:600; color: var(--accent);">Rp 0</span>
+                            </div>
+                            <div class="flex-between" style="margin-bottom: 8px;">
+                                <span style="color: var(--text-dim); font-size: 0.85rem;">Hak Owner (dari QRIS):</span>
+                                <span id="payout-sum-qris-net" style="font-weight:600; color: var(--secondary);">Rp 0</span>
                             </div>
 
                             <div class="flex-between">
-                                <span style="font-weight: 800; color:var(--text-main)">SIAP SETOR (NET):</span>
+                                <span style="font-weight: 800; color:var(--text-main)">TOTAL NET OWNER:</span>
                                 <span id="payout-sum-net" style="font-weight: 800; color: var(--success); font-size: 1.4rem;">Rp 0</span>
+                            </div>
+                        </div>
+
+                        <div style="margin-bottom: 1.5rem; padding: 12px; background: rgba(99, 102, 241, 0.05); border-radius: 12px; border: 1px solid var(--glass-border);">
+                            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                                <input type="checkbox" id="payout-deduct-expenses" onchange="updatePayoutSummary()" style="width: 18px; height: 18px; cursor: pointer;">
+                                <div style="flex: 1;">
+                                    <div style="font-size: 0.85rem; font-weight: 600; color: white;">Tangguhkan pengeluaran pada saya</div>
+                                    <div style="font-size: 0.7rem; color: var(--text-dim);">Jika dicentang, total setoran akan dikurangi biaya pengeluaran harian.</div>
+                                </div>
+                            </label>
+                            <div id="payout-exp-display" style="display: none; justify-content: space-between; margin-top: 10px; padding-top: 8px; border-top: 1px dashed var(--glass-border); font-size: 0.85rem; color: var(--danger);">
+                                <span>Total Pengeluaran:</span>
+                                <span id="payout-sum-exp" style="font-weight: 600;">- Rp 0</span>
                             </div>
                         </div>
 
@@ -2207,16 +2398,20 @@
                 const date = String(t.tanggal).substring(0, 10);
                 const key = date + '_' + t.cabang_id;
                 if (!grouped[key]) {
-                    // Hitung Uang Makan Harian (Overhead) untuk hari tersebut
+                    // Hitung Uang Makan Harian (Overhead) untuk hari tersebut - SKIP SENIN
+                    const isMonday = new Date(date).getDay() === 1;
                     const branchCapsters = dbData.capsters.filter(c => String(c.cabang_id) === String(t.cabang_id) && (c.status || 'Aktif') === 'Aktif');
-                    const dailyMeal = branchCapsters.reduce((sum, c) => sum + parseMoney(c.uang_makan), 0);
+                    const dailyMeal = isMonday ? 0 : branchCapsters.reduce((sum, c) => sum + parseMoney(c.uang_makan), 0);
 
                     grouped[key] = {
                         date: date,
                         branch_id: t.cabang_id,
                         omset: 0,
+                        omset_cash_raw: 0,
+                        omset_qris_raw: 0,
                         comm: 0,
                         meal: dailyMeal,
+                        exp: 0,
                         cash: -dailyMeal,
                         qris: 0,
                         transaction_ids: []
@@ -2227,8 +2422,14 @@
                 const method = (t.metode_bayar || t.payment_method || 'Cash');
 
                 grouped[key].omset += rev;
+                grouped[key].omset_cash_raw = (grouped[key].omset_cash_raw || 0) + (method === 'Cash' ? rev : 0);
+                grouped[key].omset_qris_raw = (grouped[key].omset_qris_raw || 0) + (method === 'QRIS' ? rev : 0);
                 grouped[key].comm += com;
                 grouped[key].transaction_ids.push(t.id);
+
+                // Hitung pengeluaran untuk tanggal & cabang ini (Hanya sekali per grup)
+                const expsAt = (dbData.expenses || []).filter(e => String(e.tanggal).startsWith(grouped[key].date) && String(e.cabang_id) === String(grouped[key].branch_id));
+                grouped[key].exp = expsAt.reduce((sum, e) => sum + parseMoney(e.jumlah || e.total), 0);
 
                 // Net per transaksi (Omset - Komisi) ditambahkan ke distribusi Cash/QRIS
                 const netTx = rev - com;
@@ -2245,19 +2446,25 @@
                     const alreadyPaidToday = (dbData.payouts || []).some(p => String(p.tanggal).startsWith(todayStr) && String(p.cabang_id) === String(b.id));
 
                     if (!alreadyPaidToday) {
+                        const isMonday = new Date(todayStr).getDay() === 1;
                         const branchCapsters = dbData.capsters.filter(c => String(c.cabang_id) === String(b.id) && (c.status || 'Aktif') === 'Aktif');
-                        const dailyMeal = branchCapsters.reduce((sum, c) => sum + parseMoney(c.uang_makan), 0);
+                        const dailyMeal = isMonday ? 0 : branchCapsters.reduce((sum, c) => sum + parseMoney(c.uang_makan), 0);
 
                         grouped[key] = {
                             date: todayStr,
                             branch_id: b.id,
                             omset: 0,
+                            omset_cash_raw: 0,
+                            omset_qris_raw: 0,
                             comm: 0,
                             meal: dailyMeal,
+                            exp: 0,
                             cash: -dailyMeal,
                             qris: 0,
                             transaction_ids: []
                         };
+                        const expsAt = (dbData.expenses || []).filter(e => String(e.tanggal).startsWith(todayStr) && String(e.cabang_id) === String(b.id));
+                        grouped[key].exp = expsAt.reduce((sum, e) => sum + parseMoney(e.jumlah || e.total), 0);
                     }
                 }
             });
@@ -2283,15 +2490,26 @@
                                 data-jasa="${g.omset}" 
                                 data-comm="${g.comm}" 
                                 data-meal="${g.meal}" 
+                                data-exp="${g.exp}" 
                                 data-cash="${g.cash}"
                                 data-qris="${g.qris}"
                                 onchange="updatePayoutSummary()">
                         </td>
                         <td>${g.date === todayStr ? '<b>Hari Ini</b>' : g.date}</td>
                         <td>${b ? b.nama : 'Unknown'}</td>
-                        <td style="text-align:right">Rp ${g.omset.toLocaleString()}</td>
+                        <td style="text-align:right">
+                            <div style="font-size: 0.85rem;">Rp ${g.omset.toLocaleString()}</div>
+                            <div style="font-size: 0.75rem; color: var(--text-dim);">
+                                (C: ${g.omset_cash_raw.toLocaleString()} | Q: ${g.omset_qris_raw.toLocaleString()})
+                            </div>
+                        </td>
                         <td style="text-align:right; color: var(--danger)">- Rp ${(g.comm + g.meal).toLocaleString()}</td>
-                        <td style="text-align:right"><strong style="color:${net >= 0 ? 'var(--success)' : 'var(--danger)'}">Rp ${net.toLocaleString()}</strong></td>
+                        <td style="text-align:right">
+                            <div style="font-weight: 700; color:${net >= 0 ? 'var(--success)' : 'var(--danger)'}">Rp ${net.toLocaleString()}</div>
+                            <div style="font-size: 0.7rem; color: var(--text-dim);">
+                                (C: ${g.cash.toLocaleString()} | Q: ${g.qris.toLocaleString()})
+                            </div>
+                        </td>
                     </tr>
                 `;
             }).join('');
@@ -2496,8 +2714,10 @@
 
             // Ambil semua transaksi IDs dari checkbox yang dicentang
             let allTxIds = [];
+            let totalExp = 0;
             checks.forEach(cb => {
                 if (cb.value) allTxIds = allTxIds.concat(cb.value.split(','));
+                totalExp += parseMoney(cb.getAttribute('data-exp'));
             });
 
             allTxIds.forEach(id => {
@@ -2510,8 +2730,8 @@
                 }
             });
 
-            const netOwner = totalJasa - totalComm - totalMeal;
-            const cashInStore = omsetCash - totalComm - totalMeal; // Sisa uang fisik di laci
+            const isDeductExp = document.getElementById('payout-deduct-expenses').checked;
+            const netOwner = totalJasa - totalComm - totalMeal - (isDeductExp ? totalExp : 0);
 
             document.getElementById('payout-sum-cash-raw').textContent = 'Rp ' + omsetCash.toLocaleString();
             document.getElementById('payout-sum-qris-raw').textContent = 'Rp ' + omsetQris.toLocaleString();
@@ -2520,7 +2740,19 @@
             document.getElementById('payout-sum-comm').textContent = '- Rp ' + totalComm.toLocaleString();
             document.getElementById('payout-sum-meal').textContent = '- Rp ' + totalMeal.toLocaleString();
 
-            document.getElementById('payout-sum-cash-net').textContent = 'Rp ' + cashInStore.toLocaleString();
+            // Display Exp
+            const expDisp = document.getElementById('payout-exp-display');
+            if (expDisp) {
+                expDisp.style.display = isDeductExp ? 'flex' : 'none';
+                document.getElementById('payout-sum-exp').textContent = '- Rp ' + totalExp.toLocaleString();
+            }
+
+            // Rincian Net Owner
+            const cashNet = (omsetCash - totalComm - totalMeal) - (isDeductExp ? totalExp : 0);
+            const qrisNet = omsetQris;
+
+            document.getElementById('payout-sum-cash-net').textContent = 'Rp ' + cashNet.toLocaleString();
+            document.getElementById('payout-sum-qris-net').textContent = 'Rp ' + qrisNet.toLocaleString();
             document.getElementById('payout-sum-net').textContent = 'Rp ' + netOwner.toLocaleString();
         }
 
@@ -2542,12 +2774,16 @@
                             if (cb.value) allIds = allIds.concat(cb.value.split(','));
                         });
 
+                        const isDeductExp = document.getElementById('payout-deduct-expenses').checked;
+                        const totalExp = isDeductExp ? parseMoney(document.getElementById('payout-sum-exp').textContent) : 0;
+
                         const payload = {
                             action: 'save_setoran',
                             branch_id: document.getElementById('payout-branch-filter').value,
                             total_jasa: parseMoney(document.getElementById('payout-sum-jasa').textContent),
                             total_komisi: parseMoney(document.getElementById('payout-sum-comm').textContent),
                             total_uang_makan: parseMoney(document.getElementById('payout-sum-meal').textContent),
+                            total_pengeluaran: totalExp,
                             setoran_bersih: net,
                             total_cash: parseMoney(document.getElementById('payout-sum-cash-raw').textContent),
                             total_qris: parseMoney(document.getElementById('payout-sum-qris-raw').textContent),
@@ -2567,11 +2803,28 @@
                                 }
                             });
 
-                            // 2. Tambah record setoran di memori lokal agar baris 'Hari Ini' juga hilang jika disetor
+                            // 2. Tambah record setoran di memori lokal dengan data lengkap hasil respon server
                             if (!dbData.payouts) dbData.payouts = [];
+
+                            // Ambil branch_id asli dari salah satu transaksi jika filter adalah 'all'
+                            let realBranchId = payload.branch_id;
+                            if (realBranchId === 'all' && allIds.length > 0) {
+                                const firstTx = dbData.transactions.find(t => String(t.id) === String(allIds[0]));
+                                if (firstTx) realBranchId = firstTx.cabang_id;
+                            }
+
                             dbData.payouts.push({
+                                id: res.payout_id || ('PAY-' + Date.now()),
                                 tanggal: new Date().toISOString(),
-                                cabang_id: payload.branch_id
+                                cabang_id: realBranchId,
+                                total_jasa: payload.total_jasa,
+                                total_komisi: payload.total_komisi,
+                                total_uang_makan: payload.total_uang_makan,
+                                setoran_bersih: payload.setoran_bersih,
+                                total_cash: payload.total_cash,
+                                total_qris: payload.total_qris,
+                                transaksi_ids: allIds,
+                                catatan: payload.catatan
                             });
 
                             // 3. Reset Catatan & Refresh UI
@@ -2736,29 +2989,42 @@
 
             const total = cart.reduce((sum, item) => sum + parseMoney(item.harga), 0);
 
-            // ID lookup (Peningkatan Akurasi: Prioritaskan Nama (WA) Persis)
+            // ID lookup (Peningkatan Akurasi)
             let selectedCustomerId = null;
             if (customerInput) {
                 const searchStr = customerInput.toLowerCase().trim();
                 const matchWA = customerInput.match(/\((.*?)\)/);
                 const waFromInput = matchWA ? matchWA[1].trim() : null;
 
-                // 1. Cari yang Persis Format "Nama (WA)" agar tidak tertukar
+                // 1. Cari yang Persis Format "Nama (WA)"
                 let customerObj = dbData.customers.find(c =>
-                    `${c.nama} (${c.whatsapp})`.toLowerCase().trim() === searchStr
+                    `${String(c.nama).trim()} (${String(c.whatsapp).trim()})`.toLowerCase() === searchStr
                 );
 
-                // 2. Fallback ke WhatsApp saja
+                // 2. Fallback ke WhatsApp saja (dari dalam kurung)
                 if (!customerObj && waFromInput) {
                     customerObj = dbData.customers.find(c => String(c.whatsapp).trim() === waFromInput);
                 }
 
-                // 3. Fallback ke Nama saja (Hati-hati jika ada nama sama)
+                // 3. Fallback ke WhatsApp saja (jika input hanya berisi angka/ID WA)
+                if (!customerObj) {
+                    const cleanWA = searchStr.replace(/[^\d]/g, '');
+                    if (cleanWA.length >= 10) {
+                        customerObj = dbData.customers.find(c => String(c.whatsapp).trim() === cleanWA);
+                    }
+                }
+
+                // 4. Fallback ke Nama saja
                 if (!customerObj) {
                     customerObj = dbData.customers.find(c => String(c.nama).toLowerCase().trim() === searchStr);
                 }
 
-                if (customerObj) selectedCustomerId = customerObj.id;
+                if (customerObj) {
+                    selectedCustomerId = customerObj.id;
+                    console.log('Customer linked:', customerObj.nama, selectedCustomerId);
+                } else {
+                    console.warn('Customer ID not found for input:', customerInput);
+                }
             }
 
             const selectedCapsterId = document.getElementById('pos-capster').value;
@@ -2787,7 +3053,8 @@
 
             const payload = {
                 action: 'save_transaction',
-                branch_id: staffInfo?.cabang_id || currentUser.cabang_id || 'BR-101',
+                // Pastikan branch_id diambil dari capster yang mengerjakan, atau user yang login
+                branch_id: staffInfo?.cabang_id || currentUser.cabang_id || (dbData.branches.length > 0 ? dbData.branches[0].id : 'BR-101'),
                 capster_id: selectedCapsterId,
                 customer_id: selectedCustomerId,
                 custom_date: finalDate.toISOString(), // Sertakan tanggal kustom
@@ -2826,6 +3093,7 @@
                 renderCart();
                 // Opsional: renderDashboard lagi jika ada data server yang mengubah stat
                 renderDashboard();
+                renderPosHistory();
             } catch (err) {
                 showToast('error', 'Gagal menyimpan transaksi: ' + err.message);
             } finally {
@@ -3383,7 +3651,9 @@
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...';
 
             try {
-                // Optimistic Local Update agar 'Realtime'
+                // --- OPTIMISTIC UI UPDATES & CLOSING MODAL ---
+                closeModal();
+
                 if (action === 'update_capster' && id) {
                     const idx = dbData.capsters.findIndex(it => String(it.id) === String(id));
                     if (idx !== -1) {
@@ -3398,11 +3668,10 @@
                     }
                 }
 
-                // New: Optimistic Update for Expenses
                 if (action === 'save_expense') {
                     const newExp = {
                         id: 'TEMP-' + Date.now(),
-                        tanggal: new Date().toLocaleString('en-CA').replace(',', ''), // YYYY-MM-DD
+                        tanggal: new Date().toLocaleString('en-CA').replace(',', '').split(' ')[0], // YYYY-MM-DD
                         cabang_id: payload.cabang_id,
                         kategori: payload.kategori,
                         keterangan: payload.keterangan,
@@ -3410,22 +3679,50 @@
                     };
                     if (!dbData.expenses) dbData.expenses = [];
                     dbData.expenses.unshift(newExp);
-
-                    // Langsung update UI tanpa nunggu GAS
                     renderExpenses();
                     renderDashboard();
                 }
 
-                await fetch(APP_URL, {
+                if (action === 'save_customer') {
+                    const newCust = {
+                        id: 'CUST-' + Date.now(),
+                        nama: payload.name,
+                        whatsapp: payload.whatsapp,
+                        jumlah_kunjungan: 0,
+                        kunjungan_terakhir: '-',
+                        poin_loyalitas: 0
+                    };
+                    if (!dbData.customers) dbData.customers = [];
+                    dbData.customers.unshift(newCust);
+                    renderCustomersList();
+                    const posCustInput = document.getElementById('pos-customer');
+                    if (posCustInput) {
+                        posCustInput.value = `${newCust.nama} (${newCust.whatsapp})`;
+                    }
+                    if (document.getElementById('customers-db-view').classList.contains('active')) {
+                        renderCustomersView();
+                    }
+                }
+
+                // --- BACKGROUND NETWORK CALL ---
+                fetch(APP_URL, {
                     method: 'POST',
                     body: JSON.stringify(payload)
+                }).then(async (r) => {
+                    const res = await r.json();
+                    if (res.status === 'success') {
+                        showToast('success', 'Data tersimpan di cloud.');
+                        // Refresh data in background to ensure sync
+                        fetchDataFromGAS();
+                    } else {
+                        showToast('error', 'Gagal sinkron cloud: ' + res.message);
+                    }
+                }).catch(err => {
+                    console.error('Sync error:', err);
                 });
 
-                showToast('success', 'Data berhasil diperbarui!');
-                closeModal();
-                setTimeout(() => fetchDataFromGAS(), 1500);
             } catch (err) {
-                showToast('error', 'Gagal menyimpan: ' + err.message);
+                showToast('error', 'Gagal memproses data: ' + err.message);
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = 'SIMPAN PERUBAHAN <i class="fas fa-save"></i>';
