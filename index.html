@@ -505,6 +505,27 @@
             top: 2rem;
         }
 
+        /* --- POS V2 (Tabel) --- */
+        .pos-v2-table tr td {
+            background: rgba(255, 255, 255, 0.03);
+            border-top: none;
+            border-bottom: none;
+        }
+
+        .pos-v2-table tr:hover td {
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        .pos-v2-table .form-input {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--glass-border);
+        }
+
+        .pos-v2-table .form-input:focus {
+            border-color: var(--primary);
+            background: rgba(0, 0, 0, 0.4);
+        }
+
         /* --- MOBILE RESPONSIVE --- */
         @media (max-width: 992px) {
             #sidebar {
@@ -778,6 +799,9 @@
             <div class="nav-link" data-view="pos">
                 <i class="fas fa-cash-register"></i> <span class="nav-text">Kasir (POS)</span>
             </div>
+            <div class="nav-link" data-view="pos-v2">
+                <i class="fas fa-table"></i> <span class="nav-text">Kasir POS V2 (Tabel)</span>
+            </div>
             <div class="nav-link" data-view="customers-db" id="nav-customers">
                 <i class="fas fa-address-book"></i> <span class="nav-text">Database Pelanggan</span>
             </div>
@@ -972,8 +996,27 @@
                     <h3 style="margin-bottom: 1.5rem;">Top Capster</h3>
                     <div id="top-capsters-list">
                         <!-- Dynamic content -->
-                        <p style="color: var(--text-dim); text-align: center; padding: 20px;">Belum ada data</p>
                     </div>
+                </div>
+            </div>
+
+            <!-- Service Analysis Section -->
+            <div class="glass-card" style="margin-top: 1.5rem;">
+                <h3 style="margin-bottom: 1.5rem;">Analisis Produk & Jasa</h3>
+                <div class="table-container">
+                    <table style="background: transparent;">
+                        <thead>
+                            <tr style="background: rgba(255,255,255,0.02);">
+                                <th>Kategori</th>
+                                <th>Nama Produk / Layanan</th>
+                                <th style="text-align: center;">Jumlah Transaksi</th>
+                                <th style="text-align: right;">Total Pendapatan</th>
+                            </tr>
+                        </thead>
+                        <tbody id="service-analysis-list">
+                            <!-- Dynamic content -->
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </section>
@@ -1093,6 +1136,79 @@
                                 </tbody>
                             </table>
                         </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- POS V2 VIEW (Table Based) -->
+        <section id="pos-v2-view" class="view">
+            <div class="glass-card">
+                <div class="flex-between" style="margin-bottom: 2rem;">
+                    <div>
+                        <h2>Kasir POS V2 <span class="badge"
+                                style="background: var(--primary); color: white; font-size: 0.75rem; margin-left: 10px;">Versi
+                                Tabel</span></h2>
+                        <p style="color: var(--text-dim)">Input beberapa pelanggan sekaligus secara cepat.</p>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn btn-glass" onclick="addRowV2()"><i class="fas fa-plus"></i> Baris
+                            Baru</button>
+                        <button class="btn btn-primary" id="btn-save-v2" onclick="saveAllTransactionsV2()"><i
+                                class="fas fa-save"></i> SIMPAN SEMUA</button>
+                    </div>
+                </div>
+
+                <div class="table-container" style="border: none; background: transparent;">
+                    <table class="pos-v2-table"
+                        style="border-spacing: 0 10px; border-collapse: separate; background: transparent; width: 100%;">
+                        <thead>
+                            <tr style="background: transparent;">
+                                <th style="border:none; padding: 10px; width: 50px;">No</th>
+                                <th style="border:none; padding: 10px; min-width: 150px;">Tanggal & Jam</th>
+                                <th style="border:none; padding: 10px; min-width: 200px;">Nama Pelanggan</th>
+                                <th style="border:none; padding: 10px; min-width: 300px;">Layanan & Produk</th>
+                                <th style="border:none; padding: 10px; min-width: 150px;">Metode Bayar</th>
+                                <th style="border:none; padding: 10px; text-align: right; min-width: 120px;">Total</th>
+                                <th style="border:none; padding: 10px; text-align: center; width: 80px;">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="pos-v2-tbody">
+                            <!-- Dynamic Rows -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Item Picker Modal (Inside pos-v2-view for context or separate) -->
+            <div id="item-picker-modal" class="modal-overlay"
+                style="display: none; position: fixed; top:0; left:0; width:100%; height:100%; z-index:9999;">
+                <div class="glass-card modal-content"
+                    style="width: 600px; max-height: 80vh; display: flex; flex-direction: column; background: var(--bg-dark); border: 1px solid var(--glass-border); padding: 2rem; border-radius: 20px;">
+                    <div class="flex-between" style="margin-bottom: 1.5rem;">
+                        <h3 style="margin:0;">Pilih Layanan & Produk</h3>
+                        <button class="btn btn-glass" onclick="closeItemPicker()" style="padding: 5px 10px;"><i
+                                class="fas fa-times"></i></button>
+                    </div>
+
+                    <div style="margin-bottom: 1rem;">
+                        <input type="text" id="item-picker-search" class="form-input"
+                            placeholder="Cari layanan atau produk..." oninput="filterPickerItems()"
+                            style="width: 100%; box-sizing: border-box;">
+                    </div>
+
+                    <div id="picker-items-grid"
+                        style="flex: 1; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; padding: 5px;">
+                        <!-- Items go here -->
+                    </div>
+
+                    <div
+                        style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <span id="picker-count" style="font-weight: 600; color: var(--primary);">0</span> <span
+                                style="font-size: 0.85rem; color: var(--text-dim);">item dipilih</span>
+                        </div>
+                        <button class="btn btn-primary" onclick="applyPickerSelection()">Terapkan Pilihan</button>
                     </div>
                 </div>
             </div>
@@ -1567,6 +1683,9 @@
                         document.getElementById('pos-time').value = now.toTimeString().split(' ')[0].substring(0, 5);
                         renderPosHistory();
                     }
+                    if (viewName === 'pos-v2') {
+                        renderPosV2();
+                    }
                     if (viewName === 'expenses') {
                         pagination.expenses.page = 1;
                         renderExpenses();
@@ -2014,6 +2133,51 @@
 
             // Update Top Capsters based on filter
             renderTopCapsters(trans);
+            renderServiceAnalysis(trans);
+        }
+
+        function renderServiceAnalysis(currentTransData) {
+            const container = document.getElementById('service-analysis-list');
+            if (!container) return;
+
+            const analysis = {}; // { service_id: { name, category, count, revenue } }
+
+            currentTransData.forEach(t => {
+                let items = [];
+                try {
+                    items = typeof t.item_json === 'string' ? JSON.parse(t.item_json) : (t.item_json || []);
+                } catch (e) { items = []; }
+
+                items.forEach(item => {
+                    const id = item.id || item.nama;
+                    if (!analysis[id]) {
+                        analysis[id] = {
+                            name: item.nama,
+                            category: item.kategori || 'Lainnya',
+                            count: 0,
+                            revenue: 0
+                        };
+                    }
+                    analysis[id].count += 1;
+                    analysis[id].revenue += parseMoney(item.harga);
+                });
+            });
+
+            const sortedAnalysis = Object.values(analysis).sort((a, b) => b.count - a.count);
+
+            if (sortedAnalysis.length === 0) {
+                container.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 20px; color: var(--text-dim);">Belum ada data transaksi untuk layanan/produk</td></tr>';
+                return;
+            }
+
+            container.innerHTML = sortedAnalysis.map(item => `
+                <tr>
+                    <td><span class="badge" style="background: rgba(255,255,255,0.05); color: ${item.category === 'Jasa' ? 'var(--secondary)' : 'var(--accent)'}">${item.category}</span></td>
+                    <td style="font-weight: 500;">${item.name}</td>
+                    <td style="text-align: center; font-weight: 600;">${item.count} <small style="color: var(--text-dim); font-weight: normal;">kali</small></td>
+                    <td style="text-align: right; color: var(--success); font-weight: 600;">Rp ${item.revenue.toLocaleString()}</td>
+                </tr>
+            `).join('');
         }
 
         function renderTopCapsters(currentTransData) {
@@ -3058,6 +3222,7 @@
                 branch_id: staffInfo?.cabang_id || currentUser.cabang_id || (dbData.branches.length > 0 ? dbData.branches[0].id : 'BR-101'),
                 capster_id: selectedCapsterId,
                 customer_id: selectedCustomerId,
+                customer_name: customerInput, // Tambahkan ini agar backend bisa auto-create
                 custom_date: finalDate.toISOString(), // Sertakan tanggal kustom
                 items: cart,
                 total: total,
@@ -3729,6 +3894,228 @@
                 btn.innerHTML = 'SIMPAN PERUBAHAN <i class="fas fa-save"></i>';
             }
         };
+        // --- POS V2 LOGIC (BATCH TABEL) ---
+        let v2Rows = [];
+        let currentlyPickingRowIndex = -1;
+
+        function renderPosV2() {
+            const tbody = document.getElementById('pos-v2-tbody');
+            if (!tbody) return;
+
+            if (v2Rows.length === 0) {
+                // Initial 3 rows
+                for (let i = 0; i < 3; i++) addRowV2(false);
+            }
+
+            tbody.innerHTML = v2Rows.map((row, index) => {
+                const total = (row.items || []).reduce((sum, it) => sum + parseMoney(it.harga), 0);
+                const itemSummary = row.items && row.items.length > 0
+                    ? `<div style="font-weight:600; color:var(--primary); cursor:pointer;" onclick="openItemPicker(${index})">${row.items.length} Item dipilih</div><div style="font-size:0.75rem; color:var(--text-dim); max-width:250px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${row.items.map(it => it.nama).join(', ')}</div>`
+                    : `<button class="btn btn-glass" style="font-size:0.75rem; color:var(--text-dim);" onclick="openItemPicker(${index})"><i class="fas fa-plus"></i> Pilih Item</button>`;
+
+                return `
+                    <tr style="background: rgba(255,255,255,0.02); border-radius: 12px;">
+                        <td style="padding: 15px; border-radius: 12px 0 0 12px; font-weight:700; color:var(--text-dim);">${index + 1}</td>
+                        <td style="padding: 15px;">
+                            <input type="date" class="form-input" style="padding:5px; font-size:0.8rem; margin-bottom:5px;" value="${row.date}" onchange="updateV2Row(${index}, 'date', this.value)">
+                            <input type="time" class="form-input" style="padding:5px; font-size:0.8rem;" value="${row.time}" onchange="updateV2Row(${index}, 'time', this.value)">
+                        </td>
+                        <td style="padding: 15px;">
+                            <input type="text" class="form-input" style="padding:10px; font-size:0.85rem;" placeholder="Nama / WA..." value="${row.customer || ''}" oninput="updateV2Row(${index}, 'customer', this.value)" list="all-customers-list">
+                        </td>
+                        <td style="padding: 15px; background: rgba(255,255,255,0.01);">
+                            ${itemSummary}
+                        </td>
+                        <td style="padding: 15px;">
+                            <select class="form-input" style="padding:8px; font-size:0.85rem;" onchange="updateV2Row(${index}, 'payment_method', this.value)">
+                                <option value="Cash" ${row.payment_method === 'Cash' ? 'selected' : ''}>Cash</option>
+                                <option value="QRIS" ${row.payment_method === 'QRIS' ? 'selected' : ''}>QRIS</option>
+                            </select>
+                        </td>
+                        <td style="padding: 15px; text-align: right; font-weight: 700; color: var(--success);">
+                            Rp ${total.toLocaleString()}
+                        </td>
+                        <td style="padding: 15px; text-align: center; border-radius: 0 12px 12px 0;">
+                            <button class="btn" style="color: var(--danger); opacity:0.6;" onclick="removeRowV2(${index})"><i class="fas fa-trash"></i></button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            // Create a datalist for customers if not exists
+            if (!document.getElementById('all-customers-list')) {
+                const dl = document.createElement('datalist');
+                dl.id = 'all-customers-list';
+                document.body.appendChild(dl);
+            }
+            document.getElementById('all-customers-list').innerHTML = (dbData.customers || [])
+                .map(c => `<option value="${c.nama} (${c.whatsapp})">`).join('');
+        }
+
+        function addRowV2(shouldRender = true) {
+            const now = new Date();
+            v2Rows.push({
+                date: now.toISOString().split('T')[0],
+                time: now.toTimeString().split(' ')[0].substring(0, 5),
+                customer: '',
+                items: [],
+                payment_method: 'Cash'
+            });
+            if (shouldRender) renderPosV2();
+        }
+
+        function removeRowV2(index) {
+            v2Rows.splice(index, 1);
+            if (v2Rows.length === 0) addRowV2(false);
+            renderPosV2();
+        }
+
+        function updateV2Row(index, key, val) {
+            v2Rows[index][key] = val;
+            if (key === 'payment_method') renderPosV2(); // re-render to keep select state
+        }
+
+        // --- ITEM PICKER MODAL LOGIC ---
+        let pickerSelectedItems = [];
+
+        function openItemPicker(rowIndex) {
+            currentlyPickingRowIndex = rowIndex;
+            pickerSelectedItems = [...(v2Rows[rowIndex].items || [])];
+            const searchInput = document.getElementById('item-picker-search');
+            if (searchInput) searchInput.value = ''; // Reset search
+            renderPickerItems();
+            document.getElementById('item-picker-modal').style.display = 'flex';
+        }
+
+        function closeItemPicker() {
+            document.getElementById('item-picker-modal').style.display = 'none';
+        }
+
+        function renderPickerItems(filter = '') {
+            const grid = document.getElementById('picker-items-grid');
+            if (!grid) return;
+
+            const items = dbData.services.filter(s =>
+                s.nama.toLowerCase().includes(filter.toLowerCase()) ||
+                s.kategori.toLowerCase().includes(filter.toLowerCase())
+            );
+
+            grid.innerHTML = items.map(s => {
+                const isSelected = pickerSelectedItems.some(it => it.id == s.id);
+                return `
+                    <div class="service-item ${isSelected ? 'selected' : ''}" 
+                         style="padding:10px; font-size:0.8rem; min-height:auto;"
+                         onclick="togglePickerItem('${s.id}')">
+                        <div style="font-weight:600; margin-bottom:4px;">${s.nama}</div>
+                        <div style="font-size:0.7rem; color:var(--text-dim);">Rp ${parseMoney(s.harga).toLocaleString()}</div>
+                    </div>
+                `;
+            }).join('');
+
+            document.getElementById('picker-count').textContent = pickerSelectedItems.length;
+        }
+
+        function togglePickerItem(id) {
+            const idx = pickerSelectedItems.findIndex(it => it.id == id);
+            if (idx === -1) {
+                const item = dbData.services.find(s => s.id == id);
+                pickerSelectedItems.push(item);
+            } else {
+                pickerSelectedItems.splice(idx, 1);
+            }
+            renderPickerItems(document.getElementById('item-picker-search').value);
+        }
+
+        function filterPickerItems() {
+            const val = document.getElementById('item-picker-search').value;
+            renderPickerItems(val);
+        }
+
+        function applyPickerSelection() {
+            if (currentlyPickingRowIndex !== -1) {
+                v2Rows[currentlyPickingRowIndex].items = [...pickerSelectedItems];
+                renderPosV2();
+                closeItemPicker();
+            }
+        }
+
+        async function saveAllTransactionsV2() {
+            const validRows = v2Rows.filter(row => row.customer.trim() !== '' && row.items && row.items.length > 0);
+
+            if (validRows.length === 0) {
+                return showToast('warning', 'Tidak ada data valid (Wajib Nama & Item dipilih)');
+            }
+
+            const btn = document.getElementById('btn-save-v2');
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> MENYIMPAN...';
+
+            // Prepare transactions
+            const transactions = validRows.map(row => {
+                const total = row.items.reduce((sum, it) => sum + parseMoney(it.harga), 0);
+                const jasaTotal = row.items.reduce((sum, it) => sum + (it.kategori === 'Jasa' ? parseMoney(it.harga) : 0), 0);
+
+                // Lookup customer ID
+                let selectedCustomerId = null;
+                const searchStr = row.customer.toLowerCase().trim();
+                const customerObj = dbData.customers.find(c =>
+                    String(c.nama).toLowerCase() === searchStr ||
+                    `${String(c.nama).trim()} (${String(c.whatsapp).trim()})`.toLowerCase() === searchStr
+                );
+                if (customerObj) selectedCustomerId = customerObj.id;
+
+                // Capster logic (Default to currentUser if not owner, or owner picks)
+                // In V2, we assume current branch context
+                const capsterId = currentUser.role === 'owner' ? (dbData.capsters[0]?.id || '') : (currentUser.id || '');
+                const staffInfo = dbData.capsters.find(c => String(c.id) === String(capsterId));
+
+                const commPercent = staffInfo ? (parseFloat(String(staffInfo.persen_komisi).replace(/[^\\d.]/g, '')) || 0) : 0;
+                const commValue = jasaTotal * (commPercent / 100);
+
+                const finalDate = new Date(row.date + 'T' + row.time);
+
+                return {
+                    branch_id: staffInfo?.cabang_id || currentUser.cabang_id || (dbData.branches.length > 0 ? dbData.branches[0].id : 'BR-101'),
+                    capster_id: capsterId,
+                    customer_id: selectedCustomerId,
+                    customer_name: row.customer, // Tambahkan ini agar backend bisa auto-create jika ID null
+                    custom_date: finalDate.toISOString(),
+                    items: row.items,
+                    total: total,
+                    capster_comm: commValue,
+                    meal_allowance: 0, // Meal is handled once a day, skip for batch unless we check each
+                    net_to_owner: total - commValue,
+                    payment_method: row.payment_method
+                };
+            });
+
+            try {
+                const response = await fetch(APP_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        action: 'save_transactions',
+                        transactions: transactions
+                    })
+                });
+
+                const res = await response.json();
+                if (res.status === 'success') {
+                    showToast('success', `${validRows.length} Transaksi Berhasil Disimpan!`);
+                    v2Rows = [];
+                    renderPosV2();
+                    fetchDataFromGAS(); // Sync data
+                } else {
+                    showToast('error', 'Gagal menyimpan: ' + res.message);
+                }
+            } catch (err) {
+                console.error('Batch save error:', err);
+                showToast('error', 'Terjadi kesalahan koneksi.');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        }
     </script>
 </body>
 
